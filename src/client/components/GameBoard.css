@@ -1,0 +1,27 @@
+.game-board {
+  display: flex;
+  flex-direction: column;
+  border: 2px solid #444;
+  background-color: black;
+  width: fit-content;
+  margin: 20px auto;
+}
+
+.row {
+  display: flex;
+}
+
+.cell {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #333;
+  box-sizing: border-box;
+}
+
+.cell.empty {
+  background-color: #111;
+}
+
+.cell.filled {
+  /* background-color overridden by inline style */
+}
