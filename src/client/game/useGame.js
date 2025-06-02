@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createEmptyGrid, checkCollision, mergePieceWithGrid } from "./utils";
 import { randomTetrimino } from "./tetriminos";
 
-export const useGame = (player, resetPlayer) => {
+export const useGame = (player, resetPlayer, onGameOver) => {
   const initialGrid = mergePieceWithGrid(createEmptyGrid(), player);
   const [grid, setGrid] = useState(initialGrid);
   const [pile, setPile] = useState(createEmptyGrid());
@@ -31,19 +31,27 @@ export const useGame = (player, resetPlayer) => {
           })
         );
 
+        const newPlayer = {
+          shape: randomTetrimino().shape,
+          color: randomTetrimino().color,
+          position: { x: 3, y: 0 },
+        };
+
+        if (checkCollision(newPile, newPlayer.shape, newPlayer.position)) {
+          if (onGameOver) onGameOver();
+          clearInterval(interval);
+          return;
+        }
+
         // to prevent pile rm
         setTimeout(() => {
-          resetPlayer({
-            shape: randomTetrimino().shape,
-            color: randomTetrimino().color,
-            position: { x: 3, y: 0 },
-          });
+          resetPlayer(newPlayer);
         }, 0);
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [player, resetPlayer]);
+  }, [player, resetPlayer, pile, onGameOver]);
 
   return { grid, pile };
 };
