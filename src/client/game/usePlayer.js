@@ -1,22 +1,13 @@
 import { useState } from "react";
 import { TETRIMINOS } from "./tetriminos";
+import { checkCollision } from "./utils";
 
-export const usePlayer = () => {
+export const usePlayer = (pile) => {
   const [player, setPlayer] = useState({
     shape: TETRIMINOS.T.shape,
     color: TETRIMINOS.T.color,
     position: { x: 3, y: 0 },
   });
-
-  const move = (dx, dy) => {
-    setPlayer((prev) => ({
-      ...prev,
-      position: {
-        x: prev.position.x + dx,
-        y: prev.position.y + dy,
-      },
-    }));
-  };
 
   const rotate = (matrix) =>
     matrix[0].map((_, i) => matrix.map((row) => row[i])).reverse();
@@ -32,5 +23,5 @@ export const usePlayer = () => {
     setPlayer(newPlayer);
   };
 
-  return { player, move, rotatePiece, resetPlayer };
+  return { player, setPlayer, rotatePiece, resetPlayer };
 };

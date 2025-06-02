@@ -49,10 +49,7 @@ export const checkCollision = (grid, shape, position) => {
           newY >= 20 || // bas
           newX < 0 ||
           newX >= 10 || // bords
-          (newY >= 0 &&
-            grid[newY] &&
-            grid[newY][newX] &&
-            grid[newY][newX].filled)
+          (grid[newY] && grid[newY][newX] && grid[newY][newX].filled)
         ) {
           return true;
         }
