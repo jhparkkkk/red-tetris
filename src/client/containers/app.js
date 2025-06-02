@@ -25,6 +25,18 @@ const App = () => {
     }
   };
 
+  const hardDrop = () => {
+    let dropY = player.position.y;
+    const newPos = { ...player.position };
+
+    while (!checkCollision(pile, player.shape, { ...newPos, y: dropY + 1 }))
+      dropY++;
+    setPlayer((prev) => ({
+      ...prev,
+      position: { ...prev.position, y: dropY },
+    }));
+  };
+
   const handleKeyDown = (e) => {
     e.preventDefault();
 
@@ -40,6 +52,9 @@ const App = () => {
         break;
       case "ArrowUp":
         rotatePiece();
+        break;
+      case " ":
+        hardDrop();
         break;
       default:
         break;
