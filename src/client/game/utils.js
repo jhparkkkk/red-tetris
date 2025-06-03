@@ -31,6 +31,7 @@ export const mergePieceWithGrid = (grid, piece) => {
         };
       } else {
         console.warn("❌ Ignored cell at", posY, posX);
+        return newGrid;
       }
     });
   });
@@ -57,4 +58,20 @@ export const checkCollision = (grid, shape, position) => {
     }
   }
   return false;
+};
+
+export const clearFullRows = (pile) => {
+  const newPile = pile.filter((row) => row.some((cell) => !cell.filled));
+  const clearedLines = pile.length - newPile.length;
+
+  while (newPile.length < pile.length) {
+    newPile.unshift(
+      Array.from({ length: pile[0].length }, () => ({
+        filled: false,
+        color: null,
+      }))
+    );
+  }
+
+  return { newPile, clearedLines };
 };

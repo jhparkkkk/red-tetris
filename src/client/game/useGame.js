@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { createEmptyGrid, checkCollision, mergePieceWithGrid } from "./utils";
+import {
+  createEmptyGrid,
+  checkCollision,
+  mergePieceWithGrid,
+  clearFullRows,
+} from "./utils";
 import { randomTetrimino } from "./tetriminos";
 
 export const useGame = (player, resetPlayer, onGameOver) => {
@@ -19,10 +24,14 @@ export const useGame = (player, resetPlayer, onGameOver) => {
       if (!checkCollision(pile, player.shape, nextPos)) {
         resetPlayer({ ...player, position: nextPos });
       } else {
-        const newPile = mergePieceWithGrid(pile, player);
+        const merged = mergePieceWithGrid(pile, player);
+        const { newPile, clearedLines } = clearFullRows(merged);
         setPile(newPile);
 
-        // display pile with attached pice
+        if (clearedLines > 0) {
+          console.log(`🧹 ${clearedLines} ligne(s) supprimée(s)`);
+        }
+
         setGrid(
           mergePieceWithGrid(newPile, {
             shape: [],
@@ -43,12 +52,9 @@ export const useGame = (player, resetPlayer, onGameOver) => {
           return;
         }
 
-        // to prevent pile rm
-        setTimeout(() => {
-          resetPlayer(newPlayer);
-        }, 0);
+        resetPlayer(newPlayer);
       }
-    }, 1000);
+    }, 800);
 
     return () => clearInterval(interval);
   }, [player, resetPlayer, pile, onGameOver]);

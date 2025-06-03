@@ -12,11 +12,24 @@ export const usePlayer = (pile) => {
   const rotate = (matrix) =>
     matrix[0].map((_, i) => matrix.map((row) => row[i])).reverse();
 
-  const rotatePiece = () => {
-    setPlayer((prev) => ({
-      ...prev,
-      shape: rotate(prev.shape),
-    }));
+  const rotatePiece = (pile, player, setPlayer) => {
+    const rotatedShape = rotate(player.shape);
+    const originalPos = player.position;
+
+    const offsets = [0, -1, 1, -2, 2];
+
+    for (let offset of offsets) {
+      const newPos = { x: originalPos.x + offset, y: originalPos.y };
+
+      if (!checkCollision(pile, rotatedShape, newPos)) {
+        setPlayer((prev) => ({
+          ...prev,
+          shape: rotatedShape,
+          position: newPos,
+        }));
+        return;
+      }
+    }
   };
 
   const resetPlayer = (newPlayer) => {

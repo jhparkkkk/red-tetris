@@ -1,38 +1,43 @@
-// src/client/game/useControls.js
 import { useEffect, useCallback } from "react";
 import { checkCollision } from "./utils";
 
 export const useControls = ({ player, setPlayer, rotatePiece, pile }) => {
   const move = useCallback(
     (dx, dy) => {
-      const newPos = {
-        x: player.position.x + dx,
-        y: player.position.y + dy,
-      };
+      setPlayer((prev) => {
+        const newPos = {
+          x: prev.position.x + dx,
+          y: prev.position.y + dy,
+        };
 
-      if (!checkCollision(pile, player.shape, newPos)) {
-        setPlayer((prev) => ({
-          ...prev,
-          position: newPos,
-        }));
-      }
+        if (!checkCollision(pile, prev.shape, newPos)) {
+          return {
+            ...prev,
+            position: newPos,
+          };
+        }
+
+        return prev;
+      });
     },
-    [player, pile, setPlayer]
+    [pile, setPlayer]
   );
 
   const hardDrop = useCallback(() => {
-    let dropY = player.position.y;
-    const newPos = { ...player.position };
+    setPlayer((prev) => {
+      let dropY = prev.position.y;
+      const newPos = { ...prev.position };
 
-    while (!checkCollision(pile, player.shape, { ...newPos, y: dropY + 1 })) {
-      dropY++;
-    }
+      while (!checkCollision(pile, prev.shape, { ...newPos, y: dropY + 1 })) {
+        dropY++;
+      }
 
-    setPlayer((prev) => ({
-      ...prev,
-      position: { ...prev.position, y: dropY },
-    }));
-  }, [player, pile, setPlayer]);
+      return {
+        ...prev,
+        position: { ...prev.position, y: dropY },
+      };
+    });
+  }, [pile, setPlayer]);
 
   const handleKeyDown = useCallback(
     (e) => {
@@ -49,7 +54,7 @@ export const useControls = ({ player, setPlayer, rotatePiece, pile }) => {
           move(0, 1);
           break;
         case "ArrowUp":
-          rotatePiece();
+          rotatePiece(pile, player, setPlayer);
           break;
         case " ":
           hardDrop();
@@ -58,7 +63,7 @@ export const useControls = ({ player, setPlayer, rotatePiece, pile }) => {
           break;
       }
     },
-    [move, hardDrop, rotatePiece]
+    [move, hardDrop, rotatePiece, pile]
   );
 
   useEffect(() => {
