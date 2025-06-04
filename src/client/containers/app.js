@@ -13,10 +13,10 @@ const App = () => {
     setIsGameOver(true);
   };
 
-  const { player, rotatePiece, setPlayer, resetPlayer } = usePlayer();
+  const { player, setPlayer, resetPlayer } = usePlayer();
   const { grid, pile } = useGame(player, resetPlayer, handleGameOver);
 
-  useControls({ player, setPlayer, rotatePiece, pile });
+  useControls({ player, setPlayer, pile });
 
   return (
     <div style={{ textAlign: "center" }}>

@@ -42,7 +42,7 @@ export const useGame = (player, resetPlayer, onGameOver) => {
 
         const newPlayer = {
           shape: randomTetrimino().shape,
-          color: randomTetrimino().color,
+          color: "white",
           position: { x: 3, y: 0 },
         };
 
