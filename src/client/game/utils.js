@@ -45,7 +45,7 @@ export const checkCollision = (grid, shape, position) => {
       if (shape[y][x]) {
         const newY = position.y + y;
         const newX = position.x + x;
-
+        console.log("Checking collision at (%d, %d)", newY, newX);
         if (
           newY >= 20 || // bas
           newX < 0 ||

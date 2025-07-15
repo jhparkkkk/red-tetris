@@ -5,7 +5,7 @@ import { checkCollision } from "./utils";
 export const usePlayer = () => {
   const [player, setPlayer] = useState({
     shape: TETRIMINOS.T.shape,
-    color: "white",
+    color: TETRIMINOS.T.color,
     position: { x: 3, y: 0 },
   });
 

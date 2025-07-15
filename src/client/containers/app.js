@@ -14,9 +14,14 @@ const App = () => {
   };
 
   const { player, setPlayer, resetPlayer } = usePlayer();
-  const { grid, pile } = useGame(player, resetPlayer, handleGameOver);
+  const { grid, pile } = useGame(
+    player,
+    resetPlayer,
+    handleGameOver,
+    isGameOver
+  );
 
-  useControls({ player, setPlayer, pile });
+  useControls({ player, setPlayer, pile, isGameOver });
 
   return (
     <div style={{ textAlign: "center" }}>
