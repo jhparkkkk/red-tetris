@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   createEmptyGrid,
   checkCollision,
@@ -12,6 +12,17 @@ export const useGame = (player, resetPlayer, onGameOver) => {
   const [grid, setGrid] = useState(initialGrid);
   const [pile, setPile] = useState(createEmptyGrid());
 
+  const playerRef = useRef(player);
+  const pileRef = useRef(pile);
+
+  useEffect(() => {
+    playerRef.current = player;
+  }, [player]);
+
+  useEffect(() => {
+    pileRef.current = pile;
+  }, [pile]);
+
   useEffect(() => {
     const updatedGrid = mergePieceWithGrid(pile, player);
     setGrid(updatedGrid);
@@ -19,6 +30,8 @@ export const useGame = (player, resetPlayer, onGameOver) => {
 
   useEffect(() => {
     const interval = setInterval(() => {
+      const player = playerRef.current;
+      const pile = pileRef.current;
       const nextPos = { ...player.position, y: player.position.y + 1 };
 
       if (!checkCollision(pile, player.shape, nextPos)) {
@@ -48,16 +61,15 @@ export const useGame = (player, resetPlayer, onGameOver) => {
 
         if (checkCollision(newPile, newPlayer.shape, newPlayer.position)) {
           if (onGameOver) onGameOver();
-          clearInterval(interval);
           return;
         }
 
         resetPlayer(newPlayer);
       }
-    }, 800);
+    }, 500);
 
     return () => clearInterval(interval);
-  }, [player, resetPlayer, pile, onGameOver]);
+  }, []);
 
   return { grid, pile };
 };
