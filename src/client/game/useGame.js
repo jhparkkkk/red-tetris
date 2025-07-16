@@ -6,6 +6,7 @@ import {
   clearFullRows,
 } from "./utils";
 import { randomTetrimino } from "./tetriminos";
+import { reachedTop } from "./utils";
 
 export const useGame = (player, resetPlayer, onGameOver, isGameOver) => {
   const initialGrid = mergePieceWithGrid(createEmptyGrid(), player);
@@ -57,18 +58,17 @@ export const useGame = (player, resetPlayer, onGameOver, isGameOver) => {
         const newPlayer = {
           shape: nextTetrimino.shape,
           color: nextTetrimino.color,
-          position: { x: 3, y: 0 },
+          position: { x: 3, y: -2 },
         };
-
-        // if (checkCollision(newPile, newPlayer.shape, newPlayer.position)) {
-        //   if (onGameOver) onGameOver();
-        //   clearInterval(interval);
-        //   return;
-        // }
+        if (reachedTop(newPile)) {
+          if (onGameOver) onGameOver();
+          clearInterval(interval);
+          return;
+        }
 
         resetPlayer(newPlayer);
       }
-    }, 500);
+    }, 383);
 
     return () => clearInterval(interval);
   }, []);
