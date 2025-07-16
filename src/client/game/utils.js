@@ -6,10 +6,10 @@ export const createEmptyGrid = () =>
   );
 
 export const mergePieceWithGrid = (grid, piece) => {
-  console.log("[mergePieceWithGrid] - grid:", grid);
+//   console.log("[mergePieceWithGrid] - grid:", grid);
   const newGrid = grid.map((row) => [...row]);
 
-  console.log("fusion", piece);
+//   console.log("fusion", piece);
 
   piece.shape.forEach((row, y) => {
     row.forEach((cell, x) => {
