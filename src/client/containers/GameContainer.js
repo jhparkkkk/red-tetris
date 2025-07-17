@@ -5,11 +5,12 @@ import { usePlayer } from "../game/usePlayer";
 import { useGame } from "../game/useGame";
 import { useControls } from "../game/useControls";
 import { useState, useEffect, useContext } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useHistory } from "react-router-dom";
 import { SocketContext } from "../context/SocketContext";
 
 const GameContainer = () => {
   const { room, playerName } = useParams();
+  const history = useHistory();
   const socket = useContext(SocketContext);
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
@@ -41,6 +42,8 @@ const GameContainer = () => {
       });
 
       return () => {
+        console.log('Leaving room:', room);
+        socket.emit("leave-room", { room, player: playerName });
         socket.off("player-joined");
         socket.off("game-started");
         socket.off('error');

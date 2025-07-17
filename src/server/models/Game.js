@@ -12,4 +12,8 @@ Game.prototype.addPlayer = function(player) {
   }
 };
 
+Game.prototype.removePlayer = function(player) {
+  this.players = this.players.filter(p => p.name !== player);
+};
+
 module.exports = Game; 
