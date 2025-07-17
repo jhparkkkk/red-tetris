@@ -9,6 +9,7 @@ import reducer from "./reducers";
 import App from "./containers/app";
 import { alert } from "./actions/alert";
 import "./global.css";
+import { SocketProvider } from './context/SocketContext';
 
 const initialState = {};
 
@@ -19,9 +20,11 @@ const store = createStore(
 );
 
 ReactDom.render(
-  <Provider store={store}>
-    <App />
-  </Provider>,
+  <SocketProvider>
+    <Provider store={store}>
+      <App />
+    </Provider>
+  </SocketProvider>,
   document.getElementById("tetris")
 );
 
