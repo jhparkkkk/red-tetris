@@ -7,6 +7,7 @@ import { useControls } from "../game/useControls";
 import { useState, useEffect, useContext } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import { SocketContext } from "../context/SocketContext";
+import { TETRIMINOS } from "../game/tetriminos";
 
 const GameContainer = () => {
   const { room, playerName } = useParams();
@@ -18,12 +19,18 @@ const GameContainer = () => {
   const [isHost, setIsHost] = useState(false);
 
   const { player, setPlayer, resetPlayer } = usePlayer();
-  const { grid, pile } = useGame(player, resetPlayer, handleGameOver);
-  
+  const { grid, pile } = useGame(
+    player,
+    resetPlayer,
+    handleGameOver,
+    isGameOver,
+    gameStarted
+  );
+
   useEffect(() => {
-    console.log('GameContainer mounted with params:', { room, playerName });
+    console.log("GameContainer mounted with params:", { room, playerName });
     if (room && playerName) {
-      console.log('Emitting join-room');
+      console.log("Emitting join-room");
       socket.emit("join-room", { room, player: playerName });
 
       socket.on("player-joined", ({ players, host }) => {
@@ -32,24 +39,33 @@ const GameContainer = () => {
         setIsHost(host === playerName);
       });
 
-      socket.on("game-started", () => {
+      socket.on("game-started", ({ piece }) => {
         console.log("Game started event received");
+        console.log("First piece:", piece);
+        setPlayer({
+          shape: TETRIMINOS[piece.type].shape,
+          color: TETRIMINOS[piece.type].color,
+          position: { x: 3, y: -2 },
+          name: playerName,
+          room: room,
+        });
+
         setGameStarted(true);
       });
 
-      socket.on('error', ({ message }) => {
-        console.log('Server error:', message);
+      socket.on("error", ({ message }) => {
+        console.log("Server error:", message);
       });
 
       return () => {
-        console.log('Leaving room:', room);
+        console.log("Leaving room:", room);
         socket.emit("leave-room", { room, player: playerName });
         socket.off("player-joined");
         socket.off("game-started");
-        socket.off('error');
+        socket.off("error");
       };
     } else {
-      console.error('Missing room or playerName in URL params');
+      console.error("Missing room or playerName in URL params");
     }
   }, [socket, room, playerName]);
 
@@ -73,7 +89,8 @@ const GameContainer = () => {
         <ul style={{ listStyle: "none", padding: 0 }}>
           {players.map((p) => (
             <li key={p}>
-              {p} {p === playerName && "(You)"} {isHost && p === playerName && "(Host)"}
+              {p} {p === playerName && "(You)"}{" "}
+              {isHost && p === playerName && "(Host)"}
             </li>
           ))}
         </ul>
@@ -97,4 +114,4 @@ const GameContainer = () => {
   );
 };
 
-export default GameContainer; 
+export default GameContainer;

@@ -9,23 +9,6 @@ import Home from "./Home";
 import GameContainer from "./GameContainer";
 
 const App = () => {
-  const [isGameOver, setIsGameOver] = useState(false);
-
-  const handleGameOver = () => {
-    console.log("💥 GAME OVER");
-    setIsGameOver(true);
-  };
-
-  const { player, setPlayer, resetPlayer } = usePlayer();
-  const { grid, pile } = useGame(
-    player,
-    resetPlayer,
-    handleGameOver,
-    isGameOver
-  );
-
-  useControls({ player, setPlayer, pile, isGameOver });
-
   return (
     <Router>
       <Switch>
