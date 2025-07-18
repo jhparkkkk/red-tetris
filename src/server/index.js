@@ -107,6 +107,18 @@ const initEngine = (io) => {
         loginfo(`❌ Room ${room} not found`);
         return;
       }
+      const someStillPlaying = game.players.some((p) => p.isPlaying);
+
+      if (someStillPlaying) {
+        socket.emit("error", {
+          message:
+            "You cannot restart the game while other players are still playing.",
+        });
+        loginfo(
+          `⛔ Cannot restart game in room ${room}, some players still playing`
+        );
+        return;
+      }
 
       game.reset();
 
@@ -150,6 +162,27 @@ const initEngine = (io) => {
       }
     });
 
+    socket.on("lines-cleared", ({ room, player, lines }) => {
+      const game = games[room];
+      if (!game) return;
+
+      const penaltyLines = lines;
+      if (penaltyLines <= 0) return;
+      loginfo(`Player ${player} cleared ${lines} line(s) in room ${room}`);
+
+      game.players.forEach((p) => {
+        if (p.name !== player && !p.isGameOver && p.socket.connected) {
+          p.socket.emit("receive-penalty", {
+            count: penaltyLines,
+          });
+        }
+      });
+
+      loginfo(
+        `💣 ${player} cleared ${lines} line(s), sent ${penaltyLines} penalty line(s)`
+      );
+    });
+
     socket.on("game-over", ({ room, player }) => {
       const game = games[room];
       if (!game) return;
@@ -157,6 +190,7 @@ const initEngine = (io) => {
       const currentPlayer = game.players.find((p) => p.name === player);
       if (currentPlayer) {
         currentPlayer.isGameOver = true;
+        currentPlayer.isPlaying = false;
         loginfo(`Player ${player} is now in Game Over in room ${room}`);
       }
 
@@ -166,6 +200,7 @@ const initEngine = (io) => {
 
       if (activePlayers.length === 1) {
         const winner = activePlayers[0].name;
+        activePlayers[0].isPlaying = false;
         loginfo(`🏆 Player ${winner} has won the game in room ${room}`);
 
         io.to(room).emit("game-won", { winner });

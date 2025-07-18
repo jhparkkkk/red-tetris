@@ -79,6 +79,7 @@ Game.prototype.reset = function () {
   this.players.forEach((p) => {
     p.pieceIndex = 0;
     p.isGameOver = false;
+    p.isPlaying = true;
   });
 };
 

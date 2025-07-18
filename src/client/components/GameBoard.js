@@ -1,11 +1,11 @@
 import React from "react";
 import "./GameBoard.css";
-
 const VISIBLE_ROWS = 20;
+const OFFSET = 4; // pour ignorer les lignes invisibles tout en haut
 
 const GameBoard = ({ grid }) => {
   // Affiche les 20 premières lignes de la pile
-  const visibleGrid = grid.slice(0, VISIBLE_ROWS);
+  const visibleGrid = grid.slice(OFFSET, OFFSET + VISIBLE_ROWS);
 
   return (
     <div className="game-board">

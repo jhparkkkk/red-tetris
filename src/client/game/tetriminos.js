@@ -1,66 +1,53 @@
-// Tetriminos sous forme de matrices (4x4) + couleurs associées
-
 export const TETRIMINOS = {
   I: {
     shape: [
-      [0, 0, 0, 0],
-      [1, 1, 1, 1],
-      [0, 0, 0, 0],
-      [0, 0, 0, 0],
+      [0, "I", 0, 0],
+      [0, "I", 0, 0],
+      [0, "I", 0, 0],
+      [0, "I", 0, 0],
     ],
-    color: "cyan",
+    color: "#6FC5D6",
   },
   O: {
     shape: [
-      [1, 1],
-      [1, 1],
+      ["O", "O"],
+      ["O", "O"],
     ],
-    color: "yellow",
+    color: "#F5DE74",
   },
   T: {
     shape: [
-      [0, 1, 0],
-      [1, 1, 1],
-      [0, 0, 0],
+      [0, "T", 0],
+      ["T", "T", "T"],
     ],
-    color: "purple",
+    color: "#A78CC3",
   },
   S: {
     shape: [
-      [0, 1, 1],
-      [1, 1, 0],
-      [0, 0, 0],
+      [0, "S", "S"],
+      ["S", "S", 0],
     ],
-    color: "green",
+    color: "#88C09E",
   },
   Z: {
     shape: [
-      [1, 1, 0],
-      [0, 1, 1],
-      [0, 0, 0],
+      ["Z", "Z", 0],
+      [0, "Z", "Z"],
     ],
-    color: "red",
+    color: "#E17B75",
   },
   J: {
     shape: [
-      [1, 0, 0],
-      [1, 1, 1],
-      [0, 0, 0],
+      ["J", 0, 0],
+      ["J", "J", "J"],
     ],
-    color: "blue",
+    color: "#6D9DC5",
   },
   L: {
     shape: [
-      [0, 0, 1],
-      [1, 1, 1],
-      [0, 0, 0],
+      [0, 0, "L"],
+      ["L", "L", "L"],
     ],
-    color: "orange",
+    color: "#F2A97E",
   },
-};
-
-export const randomTetrimino = () => {
-  const tetriminos = "IOTSZJL";
-  const rand = tetriminos[Math.floor(Math.random() * tetriminos.length)];
-  return TETRIMINOS[rand];
 };
