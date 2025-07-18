@@ -73,4 +73,13 @@ Game.prototype.onPlayerPlacedPiece = function (playerName) {
   return currentPiece ? currentPiece.serialize() : null;
 };
 
+Game.prototype.reset = function () {
+  this.started = true;
+  this.pieceQueue = [];
+  this.players.forEach((p) => {
+    p.pieceIndex = 0;
+    p.isGameOver = false;
+  });
+};
+
 module.exports = Game;

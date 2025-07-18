@@ -71,6 +71,12 @@ export const useGame = (
 
   // Loop falling down the piece
   useEffect(() => {
+    if (gameStarted && !isGameOver) {
+      console.log("🆕 Nouvelle partie - réinitialisation du plateau");
+      const empty = createEmptyGrid();
+      setPile(empty);
+      setGrid(empty);
+    }
     if (!gameStarted || isGameOver) return;
 
     const interval = setInterval(() => {
@@ -92,6 +98,10 @@ export const useGame = (
 
         if (reachedTop(newPile)) {
           if (handleGameOver) handleGameOver();
+          socket.emit("game-over", {
+            room: player.room,
+            player: player.name,
+          });
           clearInterval(interval);
           return;
         }

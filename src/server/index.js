@@ -99,7 +99,7 @@ const initEngine = (io) => {
       }
     });
 
-    socket.on("start-game", ({ room }) => {
+    socket.on("_start-game", ({ room }) => {
       loginfo(`Received start-game for room ${room}`);
       if (games[room]) {
         games[room].started = true;
@@ -113,6 +113,28 @@ const initEngine = (io) => {
       } else {
         loginfo(`Error: Room ${room} not found for start-game`);
       }
+    });
+
+    socket.on("start-game", ({ room }) => {
+      loginfo(`📨 Received start-game for room ${room}`);
+
+      const game = games[room];
+      if (!game) {
+        loginfo(`❌ Room ${room} not found`);
+        return;
+      }
+
+      game.reset();
+
+      const firstPiece = game.generateNextPiece();
+
+      io.to(room).emit("game-started", {
+        piece: firstPiece.serialize(),
+      });
+
+      loginfo(
+        `🚀 Game started in room ${room}, first piece: ${firstPiece.type}`
+      );
     });
 
     socket.on("piece-placed", ({ room, player }) => {
@@ -141,6 +163,28 @@ const initEngine = (io) => {
       }
       if (targetSocket) {
         targetSocket.emit("next-piece", { piece: nextPiece });
+      }
+    });
+
+    socket.on("game-over", ({ room, player }) => {
+      const game = games[room];
+      if (!game) return;
+
+      const currentPlayer = game.players.find((p) => p.name === player);
+      if (currentPlayer) {
+        currentPlayer.isGameOver = true;
+        loginfo(`Player ${player} is now in Game Over in room ${room}`);
+      }
+
+      const activePlayers = game.players.filter(
+        (p) => !p.isGameOver && p.socket.connected
+      );
+
+      if (activePlayers.length === 1) {
+        const winner = activePlayers[0].name;
+        loginfo(`🏆 Player ${winner} has won the game in room ${room}`);
+
+        io.to(room).emit("game-won", { winner });
       }
     });
 

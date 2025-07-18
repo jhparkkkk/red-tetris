@@ -33,6 +33,17 @@ const GameContainer = () => {
   );
 
   useEffect(() => {
+    socket.on("game-won", ({ winner }) => {
+      alert(`🏆 ${winner} a gagné la partie !`);
+      setIsGameOver(true);
+    });
+
+    return () => {
+      socket.off("game-won");
+    };
+  }, [socket]);
+
+  useEffect(() => {
     console.log("GameContainer mounted with params:", { room, playerName });
     if (room && playerName) {
       console.log("Emitting join-room");
@@ -47,6 +58,7 @@ const GameContainer = () => {
       socket.on("game-started", ({ piece }) => {
         console.log("Game started event received");
         console.log("First piece:", piece);
+        setIsGameOver(false);
         setPlayer({
           shape: TETRIMINOS[piece.type].shape,
           color: TETRIMINOS[piece.type].color,
@@ -98,6 +110,9 @@ const GameContainer = () => {
           <button onClick={startGame}>
             Start Game {players.length === 1 ? "(Solo)" : ""}
           </button>
+        )}
+        {isHost && isGameOver && (
+          <button onClick={startGame}>🔁 Restart Game</button>
         )}
       </div>
       {gameStarted ? (
