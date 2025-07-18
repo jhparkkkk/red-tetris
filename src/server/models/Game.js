@@ -66,7 +66,7 @@ Game.prototype.onPlayerPlacedPiece = function (playerName) {
 
   if (maxIndex >= queueLength) {
     const newPiece = this.generateNextPiece();
-    console.log(`🧩 Nouvelle pièce générée: ${newPiece.type}`);
+    console.log(`🧩 New piece generated: ${newPiece.type}`);
   }
 
   const currentPiece = this.pieceQueue[player.pieceIndex];
