@@ -198,7 +198,7 @@ export function create(params) {
     initApp(app, params, () => {
       const io = require("socket.io")(app, {
         cors: {
-          origin: "http://localhost:8080",
+          origin: "*",
           methods: ["GET", "POST"],
         },
       });
