@@ -62,7 +62,7 @@ const GameContainer = () => {
         setPlayer({
           shape: TETRIMINOS[piece.type].shape,
           color: TETRIMINOS[piece.type].color,
-          position: { x: 3, y: -2 },
+          position: { x: 3, y: 0 },
           name: playerName,
           room: room,
         });
@@ -99,8 +99,8 @@ const GameContainer = () => {
       <div style={{ marginBottom: "20px" }}>
         <h3>Players in Room:</h3>
         <ul style={{ listStyle: "none", padding: 0 }}>
-          {players.map((p) => (
-            <li key={p}>
+          {players.map((p, index) => (
+            <li key={`${p}-${index}`}>
               {p} {p === playerName && "(You)"}{" "}
               {isHost && p === playerName && "(Host)"}
             </li>

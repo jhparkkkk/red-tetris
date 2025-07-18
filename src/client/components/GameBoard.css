@@ -1,10 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+body {
+  font-family: 'VT323', monospace;
+  background-color: #f4f1ee; /* Fond beige très clair, comme un papier */
+  color: #3e3e3e;
+  text-align: center;
+  margin: 0;
+  padding: 20px;
+}
+
+h1, h2, h3 {
+  color: #5a524e; /* Ton taupe doux */
+  margin-bottom: 10px;
+}
+
+button {
+  background-color: #cfc6bc;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-family: 'VT323';
+  font-size: 18px;
+  cursor: pointer;
+  margin: 5px;
+  box-shadow: 2px 2px 0 #999;
+}
+
+button:hover {
+  background-color: #e5ddd5;
+}
+
 .game-board {
-  display: flex;
-  flex-direction: column;
-  border: 2px solid #444;
-  background-color: black;
-  width: fit-content;
-  margin: 20px auto;
+  display: inline-block;
+  background-color: #1d1d1d;
+  padding: 8px;
+  border-radius: 12px;
+  border: 4px solid #9a8c82;
+  box-shadow: 0 0 0 4px #d4c6b8;
 }
 
 .row {
@@ -12,16 +44,29 @@
 }
 
 .cell {
-  width: 30px;
-  height: 30px;
-  border: 1px solid #333;
+  width: 20px;
+  height: 20px;
+  border: 1px solid #2c2c2c;
   box-sizing: border-box;
+  border-radius: 4px;
 }
 
-.cell.empty {
-  background-color: #111;
+.filled {
+  background-color: #ccc; /* fallback */
 }
 
-.cell.filled {
-  /* background-color overridden by inline style */
+/* Couleurs des pièces */
+.filled[style*="cyan"]    { background-color: #add8e6; } /* doux bleu */
+.filled[style*="yellow"]  { background-color: #fef3b0; }
+.filled[style*="green"]   { background-color: #a6d8a8; }
+.filled[style*="red"]     { background-color: #f2a6a6; }
+.filled[style*="blue"]    { background-color: #a6baf2; }
+.filled[style*="purple"]  { background-color: #d5a6f2; }
+.filled[style*="orange"]  { background-color: #f5c6a6; }
+
+/* Ligne de pénalité indestructible */
+.filled[style*="#555555"],
+.filled[style*="indestructible"] {
+  background-color: #b8b8b8 !important;
+  border: 1px dashed #666;
 }

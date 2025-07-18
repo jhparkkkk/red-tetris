@@ -50,7 +50,7 @@ export const useGame = (
     const nextPiece = {
       shape: definition.shape,
       color: definition.color,
-      position: { x: 3, y: -2 },
+      position: { x: 3, y: 0 },
       name: playerRef.current.name,
       room: playerRef.current.room,
     };
@@ -66,6 +66,35 @@ export const useGame = (
     socket.on("next-piece", handleNextPiece);
     return () => {
       socket.off("next-piece", handleNextPiece);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (!socket) return;
+    console.log("🔌 Socket connected, setting up listeners");
+    const handlePenalty = ({ count }) => {
+      console.log(`🔌🔌🔌 Received penalty of ${count} lines`);
+      setPile((prevPile) => {
+        const width = prevPile[0].length;
+
+        const newLines = Array.from({ length: count }, () =>
+          Array.from({ length: width }, () => ({
+            filled: true,
+            color: "grey",
+            indestructible: true,
+          }))
+        );
+
+        const newPile = [...prevPile.slice(count + 1), ...newLines];
+
+        console.log("New pile after adding penalty lines:", newPile);
+        return newPile;
+      });
+    };
+
+    socket.on("receive-penalty", handlePenalty);
+    return () => {
+      socket.off("receive-penalty", handlePenalty);
     };
   }, [socket]);
 
@@ -94,6 +123,11 @@ export const useGame = (
 
         if (clearedLines > 0) {
           console.log(`🧹 ${clearedLines} lines cleared`);
+          socket.emit("lines-cleared", {
+            room: player.room,
+            player: player.name,
+            lines: clearedLines,
+          });
         }
 
         if (reachedTop(newPile)) {
