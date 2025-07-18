@@ -4,12 +4,22 @@ import {
   checkCollision,
   mergePieceWithGrid,
   clearFullRows,
+  reachedTop,
 } from "./utils";
-import { randomTetrimino } from "./tetriminos";
 
-export const useGame = (player, resetPlayer, onGameOver) => {
-  const initialGrid = mergePieceWithGrid(createEmptyGrid(), player);
-  const [grid, setGrid] = useState(initialGrid);
+import { useSocket } from "../context/SocketContext";
+import { TETRIMINOS } from "./tetriminos";
+export const useGame = (
+  player,
+  resetPlayer,
+  handleGameOver,
+  isGameOver,
+  gameStarted
+) => {
+  const socket = useSocket();
+  const [grid, setGrid] = useState(() =>
+    mergePieceWithGrid(createEmptyGrid(), player)
+  );
   const [pile, setPile] = useState(createEmptyGrid());
 
   const playerRef = useRef(player);
@@ -23,15 +33,56 @@ export const useGame = (player, resetPlayer, onGameOver) => {
     pileRef.current = pile;
   }, [pile]);
 
+  // Update the grid whenever the pile or player changes
   useEffect(() => {
     const updatedGrid = mergePieceWithGrid(pile, player);
     setGrid(updatedGrid);
   }, [pile, player]);
 
+  // Handle next piece from the server
+  const handleNextPiece = ({ piece }) => {
+    const definition = TETRIMINOS[piece.type];
+    if (!definition) {
+      console.error("Received unknown piece type:", piece.type);
+      return;
+    }
+
+    const nextPiece = {
+      shape: definition.shape,
+      color: definition.color,
+      position: { x: 3, y: -2 },
+      name: playerRef.current.name,
+      room: playerRef.current.room,
+    };
+
+    resetPlayer(nextPiece);
+
+    console.log("📦 Received from server:", nextPiece);
+  };
+
+  // Receive next-piece events from the server
   useEffect(() => {
+    if (!socket) return;
+    socket.on("next-piece", handleNextPiece);
+    return () => {
+      socket.off("next-piece", handleNextPiece);
+    };
+  }, [socket]);
+
+  // Loop falling down the piece
+  useEffect(() => {
+    if (gameStarted && !isGameOver) {
+      console.log("🆕 Nouvelle partie - réinitialisation du plateau");
+      const empty = createEmptyGrid();
+      setPile(empty);
+      setGrid(empty);
+    }
+    if (!gameStarted || isGameOver) return;
+
     const interval = setInterval(() => {
       const player = playerRef.current;
       const pile = pileRef.current;
+
       const nextPos = { ...player.position, y: player.position.y + 1 };
 
       if (!checkCollision(pile, player.shape, nextPos)) {
@@ -42,34 +93,32 @@ export const useGame = (player, resetPlayer, onGameOver) => {
         setPile(newPile);
 
         if (clearedLines > 0) {
-          console.log(`🧹 ${clearedLines} ligne(s) supprimée(s)`);
+          console.log(`🧹 ${clearedLines} lines cleared`);
         }
 
-        setGrid(
-          mergePieceWithGrid(newPile, {
-            shape: [],
-            color: null,
-            position: { x: 0, y: 0 },
-          })
-        );
-
-        const newPlayer = {
-          shape: randomTetrimino().shape,
-          color: "white",
-          position: { x: 3, y: 0 },
-        };
-
-        if (checkCollision(newPile, newPlayer.shape, newPlayer.position)) {
-          if (onGameOver) onGameOver();
+        if (reachedTop(newPile)) {
+          if (handleGameOver) handleGameOver();
+          socket.emit("game-over", {
+            room: player.room,
+            player: player.name,
+          });
+          clearInterval(interval);
           return;
         }
 
-        resetPlayer(newPlayer);
+        console.log("🔄 Emitting piece-placed", {
+          room: player.room,
+          player: player.name,
+        });
+        socket.emit("piece-placed", {
+          room: player.room,
+          player: player.name,
+        });
       }
-    }, 500);
+    }, 383);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [gameStarted, isGameOver]);
 
   return { grid, pile };
 };

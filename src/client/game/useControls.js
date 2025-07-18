@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from "react";
 import { checkCollision } from "./utils";
 
-export const useControls = ({ player, setPlayer, pile }) => {
+export const useControls = ({ player, setPlayer, pile, isGameOver }) => {
   const move = useCallback(
     (dx, dy) => {
       const newPos = {
@@ -66,7 +66,8 @@ export const useControls = ({ player, setPlayer, pile }) => {
 
   const handleKeyDown = useCallback(
     (e) => {
-      if (e.repeat) return;
+      if (isGameOver) return;
+      //if (e.repeat) return;
       e.preventDefault();
 
       switch (e.key) {
@@ -89,7 +90,7 @@ export const useControls = ({ player, setPlayer, pile }) => {
           break;
       }
     },
-    [move, hardDrop, rotatePiece]
+    [isGameOver, move, hardDrop, rotatePiece]
   );
 
   useEffect(() => {

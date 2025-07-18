@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { TETRIMINOS } from "./tetriminos";
-import { checkCollision } from "./utils";
 
 export const usePlayer = () => {
   const [player, setPlayer] = useState({
-    shape: TETRIMINOS.T.shape,
-    color: "white",
-    position: { x: 3, y: 0 },
+    shape: [],
+    color: null,
+    position: { x: 3, y: -2 }, // en dehors du haut du plateau
+    name: null,
+    room: null,
   });
 
   const resetPlayer = (newPlayer) => {

@@ -1,7 +1,7 @@
 import { ROWS, COLS } from "../components/GameBoard";
 
 export const createEmptyGrid = () =>
-  Array.from({ length: 20 }, () =>
+  Array.from({ length: 24 }, () =>
     Array.from({ length: 10 }, () => ({ filled: false, color: "black" }))
   );
 
@@ -45,7 +45,7 @@ export const checkCollision = (grid, shape, position) => {
       if (shape[y][x]) {
         const newY = position.y + y;
         const newX = position.x + x;
-
+        console.log("Checking collision at (%d, %d)", newY, newX);
         if (
           newY >= 20 || // bas
           newX < 0 ||
@@ -75,3 +75,21 @@ export const clearFullRows = (pile) => {
 
   return { newPile, clearedLines };
 };
+
+export function reachedTop(pile) {
+  console.log("Checking if reached top");
+  for (let x = 0; x < 10; x++) {
+    console.log("Checking column", x);
+    console.log("pile[0][x]:", pile[0][x]);
+    console.log("pile[0][x]:", pile[1][x]);
+
+    console.log("pile[0][x].filled:", pile[0][x].filled);
+    if (pile[0][x].filled) {
+      console.log("Reached top at column", x);
+      return true;
+    }
+  }
+  console.log("Did not reach top");
+
+  return false;
+}
