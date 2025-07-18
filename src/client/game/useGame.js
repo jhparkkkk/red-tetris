@@ -21,11 +21,9 @@ export const useGame = (
     mergePieceWithGrid(createEmptyGrid(), player)
   );
   const [pile, setPile] = useState(createEmptyGrid());
-  const [pieceQueue, setPieceQueue] = useState(() => (player ? [player] : []));
 
   const playerRef = useRef(player);
   const pileRef = useRef(pile);
-  const pieceQueueRef = useRef(pieceQueue);
 
   useEffect(() => {
     playerRef.current = player;
@@ -35,60 +33,46 @@ export const useGame = (
     pileRef.current = pile;
   }, [pile]);
 
-  useEffect(() => {
-    pieceQueueRef.current = pieceQueue;
-  }, [pieceQueue]);
-
-  // Met à jour la grille
+  // Update the grid whenever the pile or player changes
   useEffect(() => {
     const updatedGrid = mergePieceWithGrid(pile, player);
     setGrid(updatedGrid);
   }, [pile, player]);
 
-  // Réception des pièces du serveur
-  // 📦 Définir la fonction UNE SEULE FOIS (en dehors du useEffect)
-
+  // Handle next piece from the server
   const handleNextPiece = ({ piece }) => {
-    const type = piece.type;
-    const definition = TETRIMINOS[type];
-
+    const definition = TETRIMINOS[piece.type];
     if (!definition) {
-      console.warn("❌ Type de pièce inconnu :", type);
+      console.error("Received unknown piece type:", piece.type);
       return;
     }
 
-    const fullPiece = {
+    const nextPiece = {
       shape: definition.shape,
       color: definition.color,
-      position: { x: 3, y: -2 }, // ou celle que tu veux
+      position: { x: 3, y: -2 },
       name: playerRef.current.name,
       room: playerRef.current.room,
     };
 
-    resetPlayer(fullPiece);
+    resetPlayer(nextPiece);
 
-    console.log("📦 Reçu du serveur:", fullPiece);
-
-    setPieceQueue((prev) => {
-      const updated = [...prev, fullPiece];
-      console.log("📬 File d’attente mise à jour:", updated);
-      return updated;
-    });
+    console.log("📦 Received from server:", nextPiece);
   };
 
-  // 🎧 Réception des pièces du serveur
+  // Receive next-piece events from the server
   useEffect(() => {
     if (!socket) return;
-    console.log("🎧 Listening for next-piece events");
     socket.on("next-piece", handleNextPiece);
     return () => {
       socket.off("next-piece", handleNextPiece);
     };
   }, [socket]);
-  // Boucle de descente automatique des pièces
+
+  // Loop falling down the piece
   useEffect(() => {
-    console.log("current piece is", pieceQueueRef.current);
-    if (!gameStarted) return;
+    // console.log("current piece is", pieceQueueRef.current);
+    if (!gameStarted || isGameOver) return;
 
     const interval = setInterval(() => {
       const player = playerRef.current;
@@ -102,37 +86,15 @@ export const useGame = (
         const merged = mergePieceWithGrid(pile, player);
         const { newPile, clearedLines } = clearFullRows(merged);
         setPile(newPile);
-        console.log("current piece is", pieceQueueRef.current);
 
         if (clearedLines > 0) {
-          console.log(`🧹 ${clearedLines} ligne(s) supprimée(s)`);
+          console.log(`🧹 ${clearedLines} lines cleared`);
         }
 
         if (reachedTop(newPile)) {
           if (onGameOver) onGameOver();
-          clearInterval(interval);
           return;
         }
-
-        const nextPiece = pieceQueueRef.current[0];
-
-        if (!nextPiece) {
-          console.warn("⏳ En attente de la prochaine pièce du serveur");
-          return;
-        }
-        console.log("🔄 Changement de pièce:", nextPiece);
-        console.log("Emitting piece-placed event");
-
-        setPieceQueue((prev) => prev.slice(1));
-        pieceQueueRef.current = pieceQueueRef.current.slice(1);
-
-        resetPlayer({
-          shape: nextPiece.shape,
-          color: nextPiece.color,
-          position: { x: 3, y: -2 },
-          name: player.name,
-          room: player.room,
-        });
 
         console.log("🔄 Emitting piece-placed", {
           room: player.room,
