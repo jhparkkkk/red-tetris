@@ -99,22 +99,6 @@ const initEngine = (io) => {
       }
     });
 
-    socket.on("_start-game", ({ room }) => {
-      loginfo(`Received start-game for room ${room}`);
-      if (games[room]) {
-        games[room].started = true;
-        const firstPiece = games[room].generateNextPiece();
-        io.to(room).emit("game-started", {
-          piece: firstPiece.serialize(),
-        });
-        loginfo(
-          `Game started in room ${room}, first piece: ${firstPiece.type}`
-        );
-      } else {
-        loginfo(`Error: Room ${room} not found for start-game`);
-      }
-    });
-
     socket.on("start-game", ({ room }) => {
       loginfo(`📨 Received start-game for room ${room}`);
 
