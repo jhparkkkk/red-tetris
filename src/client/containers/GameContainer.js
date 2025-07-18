@@ -19,6 +19,11 @@ const GameContainer = () => {
   const [isHost, setIsHost] = useState(false);
 
   const { player, setPlayer, resetPlayer } = usePlayer();
+
+  const handleGameOver = () => {
+    console.log("💥 GAME OVER");
+    setIsGameOver(true);
+  };
   const { grid, pile } = useGame(
     player,
     resetPlayer,
@@ -68,11 +73,6 @@ const GameContainer = () => {
       console.error("Missing room or playerName in URL params");
     }
   }, [socket, room, playerName]);
-
-  const handleGameOver = () => {
-    console.log("💥 GAME OVER");
-    setIsGameOver(true);
-  };
 
   const startGame = () => {
     console.log("Emitting start-game event for room:", room);

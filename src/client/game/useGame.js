@@ -12,7 +12,7 @@ import { TETRIMINOS } from "./tetriminos";
 export const useGame = (
   player,
   resetPlayer,
-  onGameOver,
+  handleGameOver,
   isGameOver,
   gameStarted
 ) => {
@@ -71,7 +71,6 @@ export const useGame = (
 
   // Loop falling down the piece
   useEffect(() => {
-    // console.log("current piece is", pieceQueueRef.current);
     if (!gameStarted || isGameOver) return;
 
     const interval = setInterval(() => {
@@ -92,7 +91,8 @@ export const useGame = (
         }
 
         if (reachedTop(newPile)) {
-          if (onGameOver) onGameOver();
+          if (handleGameOver) handleGameOver();
+          clearInterval(interval);
           return;
         }
 
@@ -108,7 +108,7 @@ export const useGame = (
     }, 383);
 
     return () => clearInterval(interval);
-  }, [gameStarted]);
+  }, [gameStarted, isGameOver]);
 
   return { grid, pile };
 };
