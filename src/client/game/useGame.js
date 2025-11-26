@@ -74,6 +74,7 @@ export const useGame = (
     console.log("🔌 Socket connected, setting up listeners");
     const handlePenalty = ({ count }) => {
       console.log(`🔌🔌🔌 Received penalty of ${count} lines`);
+
       setPile((prevPile) => {
         const width = prevPile[0].length;
 
@@ -85,7 +86,7 @@ export const useGame = (
           }))
         );
 
-        const newPile = [...prevPile.slice(count + 1), ...newLines];
+        const newPile = [...prevPile.slice(count), ...newLines];
 
         console.log("New pile after adding penalty lines:", newPile);
         return newPile;

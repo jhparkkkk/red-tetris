@@ -9,14 +9,31 @@ const Home = () => {
   const history = useHistory();
 
   useEffect(() => {
+    // Recevoir la liste initiale des rooms disponibles
     socket.on("rooms", (roomsList) => {
+      console.log("📋 Received available rooms:", roomsList);
       setRooms(roomsList);
     });
-    socket.on("new-room", (room) => {
-      setRooms((prev) => [...new Set([...prev, room])]);
+
+    // ✅ NOUVEAU: Recevoir les mises à jour dynamiques
+    socket.on("rooms-update", (roomsList) => {
+      console.log("🔄 Rooms updated:", roomsList);
+      setRooms(roomsList);
     });
+
+    // Ajouter une nouvelle room créée
+    socket.on("new-room", (room) => {
+      console.log("✨ New room created:", room);
+      setRooms((prev) => {
+        // Éviter les doublons
+        if (prev.includes(room)) return prev;
+        return [...prev, room];
+      });
+    });
+
     return () => {
       socket.off("rooms");
+      socket.off("rooms-update");
       socket.off("new-room");
     };
   }, [socket]);
@@ -45,16 +62,58 @@ const Home = () => {
         style={{ margin: "10px" }}
       />
       <button onClick={createRoom}>Create Room</button>
-      <h2>Active Rooms</h2>
-      <ul style={{ listStyleType: "none" }}>
-        {rooms.map((room) => (
-          <li key={room}>
-            Room {room} <button onClick={() => joinRoom(room)}>Join</button>
-          </li>
-        ))}
-      </ul>
+
+      <h2>Available Rooms ({rooms.length})</h2>
+
+      {/* ✅ NOUVEAU: Message si aucune room disponible */}
+      {rooms.length === 0 ? (
+        <p style={{ color: "#999", fontStyle: "italic" }}>
+          No available rooms. Create one to start playing!
+        </p>
+      ) : (
+        <ul style={{ listStyleType: "none", padding: 0 }}>
+          {rooms.map((room) => (
+            <li key={room} style={{ margin: "10px 0" }}>
+              <span
+                style={{
+                  fontWeight: "bold",
+                  marginRight: "10px",
+                  color: "#4CAF50",
+                }}
+              >
+                Room {room}
+              </span>
+              <button
+                onClick={() => joinRoom(room)}
+                style={{
+                  padding: "5px 15px",
+                  backgroundColor: "#4CAF50",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                Join
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* ✅ NOUVEAU: Note explicative */}
+      <p
+        style={{
+          marginTop: "30px",
+          fontSize: "14px",
+          color: "#666",
+          fontStyle: "italic",
+        }}
+      >
+        💡 Note: Rooms disappear from this list once a game starts
+      </p>
     </div>
   );
 };
 
-export default Home; 
+export default Home;

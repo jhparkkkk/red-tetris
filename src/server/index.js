@@ -34,10 +34,54 @@ const initApp = (app, params, cb) => {
   });
 };
 
+// ✅ NOUVELLE FONCTION: Obtenir les rooms disponibles (non-started)
+const getAvailableRooms = () => {
+  return Object.keys(games).filter((roomName) => !games[roomName].started);
+};
+
+// ✅ NOUVELLE FONCTION: Vérifier si un seul joueur actif reste
+const checkForAutoWin = (game, room, io) => {
+  // Ne vérifier que si la partie est en cours
+  if (!game.started) return;
+
+  const activePlayers = game.players.filter(
+    (p) => !p.isGameOver && p.isPlaying
+  );
+
+  loginfo(
+    `🔍 Checking auto-win in room ${room}: ${activePlayers.length} active player(s)`
+  );
+
+  // ✅ Si un seul joueur actif reste, il gagne automatiquement
+  if (activePlayers.length === 1) {
+    const winner = activePlayers[0].name;
+    activePlayers[0].isPlaying = false;
+
+    loginfo(
+      `🏆 AUTO-WIN: ${winner} wins in room ${room} (last player standing)`
+    );
+
+    io.to(room).emit("game-won", { winner });
+    return true;
+  }
+
+  // ✅ Si plus aucun joueur actif (tous ont rage-quit), fin de partie
+  if (activePlayers.length === 0) {
+    loginfo(`⚠️ No active players left in room ${room}, game over`);
+    return true;
+  }
+
+  return false;
+};
+
 const initEngine = (io) => {
   io.on("connection", function (socket) {
     loginfo("Socket connected: " + socket.id);
-    socket.emit("rooms", Object.keys(games));
+
+    // ✅ MODIFIÉ: Envoyer seulement les rooms disponibles (non-started)
+    const availableRooms = getAvailableRooms();
+    socket.emit("rooms", availableRooms);
+    loginfo(`📋 Sent ${availableRooms.length} available room(s) to new client`);
 
     socket.on("create-room", (room) => {
       if (games[room]) {
@@ -45,6 +89,8 @@ const initEngine = (io) => {
         return;
       }
       games[room] = new Game(room);
+
+      // ✅ MODIFIÉ: Broadcast seulement si la room est disponible
       io.emit("new-room", room);
       loginfo(`Room ${room} created by socket ${socket.id}`);
     });
@@ -54,42 +100,91 @@ const initEngine = (io) => {
         games[room] = new Game(room);
         loginfo(`Room ${room} created on join by ${player}`);
       }
+
+      const game = games[room];
+
+      const existingPlayer = game.players.find((p) => p.name === player);
+      if (existingPlayer) {
+        socket.emit("error", {
+          message: "Player name already taken in this room",
+        });
+        loginfo(`⚠️ ${player} tried to join ${room} but name is taken`);
+        return;
+      }
+
+      if (game.started) {
+        socket.emit("error", { message: "Game already started" });
+        loginfo(`⚠️ ${player} tried to join started game ${room}`);
+        return;
+      }
+
       const p = new Player(socket, player);
-      games[room].addPlayer(p);
+      game.addPlayer(p);
       socket.join(room);
-      const roomPlayers = games[room].players.map((p) => p.name);
-      const hostName = games[room].host.name;
-      loginfo(`Players in room ${room}:`, roomPlayers, "Host:", hostName);
+
+      const roomPlayers = game.players.map((p) => p.name);
+      const hostName = game.host.name;
+
+      loginfo(
+        `✅ ${player} joined room ${room}. Players: [${roomPlayers}], Host: ${hostName}`
+      );
+
       io.to(room).emit("player-joined", {
         players: roomPlayers,
         host: hostName,
       });
-      loginfo(`${player} joined room ${room}`);
     });
 
     socket.on("leave-room", ({ room, player }) => {
-      if (games[room]) {
-        games[room].removePlayer(player);
-        socket.leave(room);
-        let roomPlayers = games[room].players.map((p) => p.name);
-        let hostName = games[room].host ? games[room].host.name : null;
-        if (games[room].players.length === 0) {
-          delete games[room];
-          loginfo(`Room ${room} deleted as it is empty`);
-        } else {
-          if (hostName === player) {
-            games[room].host = games[room].players[0];
-            hostName = games[room].host.name;
-          }
-          io.to(room).emit("player-joined", {
-            players: roomPlayers,
-            host: hostName,
-          });
-          loginfo(
-            `${player} left room ${room}. Updated players: ${roomPlayers}, Host: ${hostName}`
-          );
-        }
+      if (!games[room]) return;
+
+      const game = games[room];
+      const wasHost = game.host && game.host.name === player;
+
+      game.removePlayer(player);
+      socket.leave(room);
+
+      loginfo(`🚪 ${player} left room ${room}. Was host: ${wasHost}`);
+
+      if (game.players.length === 0) {
+        delete games[room];
+        loginfo(`🗑️ Room ${room} deleted (empty)`);
+        return;
       }
+
+      // ✅ NOUVEAU: Vérifier si un joueur gagne automatiquement
+      const gameEnded = checkForAutoWin(game, room, io);
+      if (gameEnded) {
+        loginfo(`🎮 Game ended in room ${room} after player left`);
+      }
+
+      let newHost = null;
+      if (wasHost && game.players.length > 0) {
+        game.host = game.players[0];
+        newHost = game.host.name;
+
+        loginfo(
+          `👑 Host transferred from ${player} to ${newHost} in room ${room}`
+        );
+
+        io.to(room).emit("host-changed", {
+          newHost: newHost,
+          oldHost: player,
+        });
+      }
+
+      const roomPlayers = game.players.map((p) => p.name);
+      const hostName = game.host ? game.host.name : null;
+
+      io.to(room).emit("player-left", {
+        player: player,
+        players: roomPlayers,
+        host: hostName,
+      });
+
+      loginfo(
+        `Updated room ${room}: Players: [${roomPlayers}], Host: ${hostName}`
+      );
     });
 
     socket.on("delete-room", ({ room }) => {
@@ -100,13 +195,31 @@ const initEngine = (io) => {
     });
 
     socket.on("start-game", ({ room }) => {
-      loginfo(`📨 Received start-game for room ${room}`);
+      loginfo(`🔨 Received start-game for room ${room}`);
 
       const game = games[room];
       if (!game) {
         loginfo(`❌ Room ${room} not found`);
         return;
       }
+
+      const requester = game.players.find((p) => p.socket.id === socket.id);
+      if (!requester) {
+        socket.emit("error", { message: "You are not in this room" });
+        loginfo(
+          `⚠️ Socket ${socket.id} tried to start game but is not in room ${room}`
+        );
+        return;
+      }
+
+      if (game.host.name !== requester.name) {
+        socket.emit("error", { message: "Only the host can start the game" });
+        loginfo(
+          `⚠️ ${requester.name} tried to start game but is not host (host is ${game.host.name})`
+        );
+        return;
+      }
+
       const someStillPlaying = game.players.some((p) => p.isPlaying);
 
       if (someStillPlaying) {
@@ -128,9 +241,14 @@ const initEngine = (io) => {
         piece: firstPiece.serialize(),
       });
 
+      // ✅ NOUVEAU: Retirer la room de la liste publique (game started)
+      const availableRooms = getAvailableRooms();
+      io.emit("rooms-update", availableRooms);
+
       loginfo(
-        `🚀 Game started in room ${room}, first piece: ${firstPiece.type}`
+        `🚀 Game started in room ${room} by ${requester.name} (host), first piece: ${firstPiece.type}`
       );
+      loginfo(`📋 Updated available rooms: [${availableRooms}]`);
     });
 
     socket.on("piece-placed", ({ room, player }) => {
@@ -166,8 +284,15 @@ const initEngine = (io) => {
       const game = games[room];
       if (!game) return;
 
-      const penaltyLines = lines;
-      if (penaltyLines <= 0) return;
+      const penaltyLines = lines - 1;
+
+      if (penaltyLines <= 0) {
+        loginfo(
+          `${player} cleared only 1 line in room ${room}, no penalty (1-1=0)`
+        );
+        return;
+      }
+
       loginfo(`Player ${player} cleared ${lines} line(s) in room ${room}`);
 
       game.players.forEach((p) => {
@@ -179,7 +304,7 @@ const initEngine = (io) => {
       });
 
       loginfo(
-        `💣 ${player} cleared ${lines} line(s), sent ${penaltyLines} penalty line(s)`
+        `💣 ${player} cleared ${lines} line(s), sent ${penaltyLines} penalty line(s) to opponents`
       );
     });
 
@@ -194,17 +319,8 @@ const initEngine = (io) => {
         loginfo(`Player ${player} is now in Game Over in room ${room}`);
       }
 
-      const activePlayers = game.players.filter(
-        (p) => !p.isGameOver && p.socket.connected
-      );
-
-      if (activePlayers.length === 1) {
-        const winner = activePlayers[0].name;
-        activePlayers[0].isPlaying = false;
-        loginfo(`🏆 Player ${winner} has won the game in room ${room}`);
-
-        io.to(room).emit("game-won", { winner });
-      }
+      // ✅ MODIFIÉ: Utiliser la fonction commune pour vérifier la victoire
+      checkForAutoWin(game, room, io);
     });
 
     socket.on("action", (action) => {
@@ -215,11 +331,61 @@ const initEngine = (io) => {
 
     socket.on("disconnect", () => {
       loginfo(`Socket disconnected: ${socket.id}`);
+
       for (const [roomName, game] of Object.entries(games)) {
         const player = game.players.find((p) => p.socket.id === socket.id);
+
         if (player) {
-          game.removePlayer(player.name);
-          loginfo(`Player ${player.name} disconnected from room ${roomName}`);
+          const playerName = player.name;
+          const wasHost = game.host && game.host.name === playerName;
+
+          game.removePlayer(playerName);
+          loginfo(
+            `🚪 ${playerName} disconnected from room ${roomName}. Was host: ${wasHost}`
+          );
+
+          if (game.players.length === 0) {
+            delete games[roomName];
+            loginfo(`🗑️ Room ${roomName} deleted (empty after disconnect)`);
+
+            // ✅ NOUVEAU: Mettre à jour la liste des rooms disponibles
+            const availableRooms = getAvailableRooms();
+            io.emit("rooms-update", availableRooms);
+            break;
+          }
+
+          // ✅ NOUVEAU: Vérifier victoire automatique
+          const gameEnded = checkForAutoWin(game, roomName, io);
+          if (gameEnded) {
+            loginfo(`🎮 Game ended in room ${roomName} after disconnect`);
+          }
+
+          if (wasHost && game.players.length > 0) {
+            game.host = game.players[0];
+            const newHost = game.host.name;
+
+            loginfo(
+              `👑 Host auto-transferred from ${playerName} to ${newHost} in room ${roomName}`
+            );
+
+            io.to(roomName).emit("host-changed", {
+              newHost: newHost,
+              oldHost: playerName,
+            });
+          }
+
+          const roomPlayers = game.players.map((p) => p.name);
+          const hostName = game.host ? game.host.name : null;
+
+          io.to(roomName).emit("player-left", {
+            player: playerName,
+            players: roomPlayers,
+            host: hostName,
+          });
+
+          loginfo(
+            `Updated room ${roomName} after disconnect: Players: [${roomPlayers}], Host: ${hostName}`
+          );
           break;
         }
       }

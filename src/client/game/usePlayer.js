@@ -4,7 +4,7 @@ export const usePlayer = () => {
   const [player, setPlayer] = useState({
     shape: [],
     color: null,
-    position: { x: 3, y: 0 }, // en dehors du haut du plateau
+    position: { x: 3, y: 2 }, // en dehors du haut du plateau
     name: null,
     room: null,
   });

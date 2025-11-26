@@ -25,8 +25,45 @@ Game.prototype.addPlayer = function (player) {
   }
 };
 
-Game.prototype.removePlayer = function (player) {
-  this.players = this.players.filter((p) => p.name !== player);
+Game.prototype.transferHost = function () {
+  if (this.players.length > 0) {
+    const newHost = this.players[0];
+    this.host = newHost;
+    console.log(`host transferred to ${newHost.name}`);
+    return newHost;
+  }
+
+  this.host = null;
+  console.log("no player left in room");
+  return null;
+};
+
+Game.prototype.removePlayer = function (playerName) {
+  const wasHost = this.host && this.host.name === playerName;
+
+  this.players = this.players.filter((p) => p.name !== playerName);
+  console.log(
+    `🚪 ${playerName} left room ${this.room}. Players remaining: ${this.players.length}`
+  );
+
+  let newHost = null;
+  if (wasHost) {
+    newHost = this.transferHost();
+  }
+
+  return {
+    wasHost: wasHost,
+    newHost: newHost,
+    playersRemaining: this.players.length,
+  };
+};
+
+Game.prototype.getHostName = function () {
+  return this.host ? this.host.name : null;
+};
+
+Game.prototype.getPlayerNames = function () {
+  return this.players.map((p) => p.name);
 };
 
 Game.prototype.generateNextPiece = function () {
