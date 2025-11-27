@@ -34,14 +34,11 @@ const initApp = (app, params, cb) => {
   });
 };
 
-// ✅ NOUVELLE FONCTION: Obtenir les rooms disponibles (non-started)
 const getAvailableRooms = () => {
   return Object.keys(games).filter((roomName) => !games[roomName].started);
 };
 
-// ✅ NOUVELLE FONCTION: Vérifier si un seul joueur actif reste
 const checkForAutoWin = (game, room, io) => {
-  // Ne vérifier que si la partie est en cours
   if (!game.started) return;
 
   const activePlayers = game.players.filter(
@@ -52,7 +49,6 @@ const checkForAutoWin = (game, room, io) => {
     `🔍 Checking auto-win in room ${room}: ${activePlayers.length} active player(s)`
   );
 
-  // ✅ Si un seul joueur actif reste, il gagne automatiquement
   if (activePlayers.length === 1) {
     const winner = activePlayers[0].name;
     activePlayers[0].isPlaying = false;
@@ -65,7 +61,6 @@ const checkForAutoWin = (game, room, io) => {
     return true;
   }
 
-  // ✅ Si plus aucun joueur actif (tous ont rage-quit), fin de partie
   if (activePlayers.length === 0) {
     loginfo(`⚠️ No active players left in room ${room}, game over`);
     return true;
@@ -78,7 +73,6 @@ const initEngine = (io) => {
   io.on("connection", function (socket) {
     loginfo("Socket connected: " + socket.id);
 
-    // ✅ MODIFIÉ: Envoyer seulement les rooms disponibles (non-started)
     const availableRooms = getAvailableRooms();
     socket.emit("rooms", availableRooms);
     loginfo(`📋 Sent ${availableRooms.length} available room(s) to new client`);
@@ -90,7 +84,6 @@ const initEngine = (io) => {
       }
       games[room] = new Game(room);
 
-      // ✅ MODIFIÉ: Broadcast seulement si la room est disponible
       io.emit("new-room", room);
       loginfo(`Room ${room} created by socket ${socket.id}`);
     });
@@ -152,7 +145,6 @@ const initEngine = (io) => {
         return;
       }
 
-      // ✅ NOUVEAU: Vérifier si un joueur gagne automatiquement
       const gameEnded = checkForAutoWin(game, room, io);
       if (gameEnded) {
         loginfo(`🎮 Game ended in room ${room} after player left`);
@@ -241,7 +233,6 @@ const initEngine = (io) => {
         piece: firstPiece.serialize(),
       });
 
-      // ✅ NOUVEAU: Retirer la room de la liste publique (game started)
       const availableRooms = getAvailableRooms();
       io.emit("rooms-update", availableRooms);
 
@@ -249,6 +240,19 @@ const initEngine = (io) => {
         `🚀 Game started in room ${room} by ${requester.name} (host), first piece: ${firstPiece.type}`
       );
       loginfo(`📋 Updated available rooms: [${availableRooms}]`);
+    });
+
+    socket.on("spectrum-update", ({ room, player, spectrum }) => {
+      const game = games[room];
+      if (!game) return;
+
+      // Envoyer le spectrum à tous les AUTRES joueurs de la room
+      socket.to(room).emit("opponent-spectrum", {
+        player: player,
+        spectrum: spectrum,
+      });
+
+      // loginfo(`📊 Spectrum update from ${player} in room ${room}`);
     });
 
     socket.on("piece-placed", ({ room, player }) => {
@@ -319,7 +323,6 @@ const initEngine = (io) => {
         loginfo(`Player ${player} is now in Game Over in room ${room}`);
       }
 
-      // ✅ MODIFIÉ: Utiliser la fonction commune pour vérifier la victoire
       checkForAutoWin(game, room, io);
     });
 
@@ -348,13 +351,11 @@ const initEngine = (io) => {
             delete games[roomName];
             loginfo(`🗑️ Room ${roomName} deleted (empty after disconnect)`);
 
-            // ✅ NOUVEAU: Mettre à jour la liste des rooms disponibles
             const availableRooms = getAvailableRooms();
             io.emit("rooms-update", availableRooms);
             break;
           }
 
-          // ✅ NOUVEAU: Vérifier victoire automatique
           const gameEnded = checkForAutoWin(game, roomName, io);
           if (gameEnded) {
             loginfo(`🎮 Game ended in room ${roomName} after disconnect`);

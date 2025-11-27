@@ -1,5 +1,6 @@
 import React from "react";
 import GameBoard from "../components/GameBoard";
+import Spectrum from "../components/Spectrum";
 import "../components/GameBoard.css";
 import { usePlayer } from "../game/usePlayer";
 import { useGame } from "../game/useGame";
@@ -8,7 +9,7 @@ import { useState, useEffect, useContext } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import { SocketContext } from "../context/SocketContext";
 import { TETRIMINOS } from "../game/tetriminos";
-
+import { calculateSpectrumFromBottom } from "../game/spectrumUtils";
 const GameContainer = () => {
   const { room, playerName } = useParams();
   const history = useHistory();
@@ -19,7 +20,7 @@ const GameContainer = () => {
   const [isHost, setIsHost] = useState(false);
   const [currentHost, setCurrentHost] = useState(null);
   const [hasWon, setHasWon] = useState(false); // ✅ NOUVEAU: Distinguer victoire
-
+  const [opponentSpectrums, setOpponentSpectrums] = useState({});
   const { player, setPlayer, resetPlayer } = usePlayer();
 
   const handleGameOver = () => {
@@ -35,6 +36,44 @@ const GameContainer = () => {
     isGameOver,
     gameStarted
   );
+
+  useEffect(() => {
+    if (!gameStarted || !socket || !player.name) return;
+
+    const interval = setInterval(() => {
+      const mySpectrum = calculateSpectrumFromBottom(pile);
+
+      socket.emit("spectrum-update", {
+        room: room,
+        player: playerName,
+        spectrum: mySpectrum,
+      });
+    }, 500); // Mise à jour toutes les 500ms
+
+    return () => clearInterval(interval);
+  }, [gameStarted, pile, socket, room, playerName]);
+
+  // ✅ NOUVEAU: Recevoir les spectrums des adversaires
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("opponent-spectrum", ({ player, spectrum }) => {
+      setOpponentSpectrums((prev) => {
+        const prevPlayer = prev[player];
+        return {
+          ...prev,
+          [player]: {
+            spectrum: spectrum,
+            isGameOver: (prevPlayer && prevPlayer.isGameOver) || false,
+          },
+        };
+      });
+    });
+
+    return () => {
+      socket.off("opponent-spectrum");
+    };
+  }, [socket]);
 
   useEffect(() => {
     socket.on("game-won", ({ winner }) => {
@@ -69,6 +108,17 @@ const GameContainer = () => {
         setPlayers(players);
         setCurrentHost(host);
         setIsHost(host === playerName);
+
+        const newSpectrums = {};
+        players.forEach((p) => {
+          if (p !== playerName) {
+            newSpectrums[p] = {
+              spectrum: Array(10).fill(0),
+              isGameOver: false,
+            };
+          }
+        });
+        setOpponentSpectrums(newSpectrums);
       });
 
       socket.on("host-changed", ({ newHost, oldHost }) => {
@@ -86,6 +136,12 @@ const GameContainer = () => {
         setPlayers(players);
         setCurrentHost(host);
         setIsHost(host === playerName);
+
+        setOpponentSpectrums((prev) => {
+          const updated = { ...prev };
+          delete updated[leftPlayer];
+          return updated;
+        });
       });
 
       socket.on("game-started", ({ piece }) => {
@@ -96,6 +152,17 @@ const GameContainer = () => {
         setIsGameOver(false);
         setHasWon(false);
 
+        const resetSpectrums = {};
+        players.forEach((p) => {
+          if (p !== playerName) {
+            resetSpectrums[p] = {
+              spectrum: Array(10).fill(0),
+              isGameOver: false,
+            };
+          }
+        });
+        setOpponentSpectrums(resetSpectrums);
+
         setPlayer({
           shape: TETRIMINOS[piece.type].shape,
           color: TETRIMINOS[piece.type].color,
@@ -105,6 +172,17 @@ const GameContainer = () => {
         });
 
         setGameStarted(true);
+      });
+
+      socket.on("game-over", ({ player: deadPlayer }) => {
+        console.log(`💀 ${deadPlayer} is game over`);
+        setOpponentSpectrums((prev) => ({
+          ...prev,
+          [deadPlayer]: {
+            ...prev[deadPlayer],
+            isGameOver: true,
+          },
+        }));
       });
 
       socket.on("error", ({ message }) => {
@@ -131,11 +209,12 @@ const GameContainer = () => {
     socket.emit("start-game", { room });
   };
 
-  useControls({ player, setPlayer, pile });
+  useControls({ player, setPlayer, pile, isGameOver });
 
   return (
     <div style={{ textAlign: "center" }}>
       <h1>Red Tetris - Room {room}</h1>
+
       <div style={{ marginBottom: "20px" }}>
         <h3>Players in Room:</h3>
         <ul style={{ listStyle: "none", padding: 0 }}>
@@ -148,7 +227,6 @@ const GameContainer = () => {
           ))}
         </ul>
 
-        {/* Avant la partie */}
         {isHost && !gameStarted && (
           <div>
             <p style={{ color: "#4CAF50", fontWeight: "bold" }}>
@@ -166,7 +244,6 @@ const GameContainer = () => {
           </p>
         )}
 
-        {/* Après la partie */}
         {isHost && isGameOver && (
           <button onClick={startGame}>🔁 Restart Game</button>
         )}
@@ -180,6 +257,7 @@ const GameContainer = () => {
 
       {gameStarted ? (
         <div>
+          {/* Messages de victoire/défaite */}
           {isGameOver && hasWon && (
             <h2
               style={{
@@ -205,7 +283,39 @@ const GameContainer = () => {
             </h2>
           )}
 
-          <GameBoard grid={grid} />
+          {/* Layout principal: votre board + spectrums */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "flex-start",
+              gap: "30px",
+              flexWrap: "wrap",
+            }}
+          >
+            {/* Votre board */}
+            <div style={{ flex: "0 0 auto" }}>
+              <h3 style={{ color: "#4CAF50" }}>Your Board</h3>
+              <GameBoard grid={grid} />
+            </div>
+
+            {/* ✅ NOUVEAU: Spectrums des adversaires */}
+            {Object.keys(opponentSpectrums).length > 0 && (
+              <div style={{ flex: "0 0 auto" }}>
+                <h3 className="spectrums-title">Opponents</h3>
+                <div className="spectrums-container">
+                  {Object.entries(opponentSpectrums).map(([name, data]) => (
+                    <Spectrum
+                      key={name}
+                      playerName={name}
+                      heights={data.spectrum}
+                      isGameOver={data.isGameOver}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         !isHost && <h2>Waiting for host to start the game...</h2>
