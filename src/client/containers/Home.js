@@ -5,8 +5,32 @@ import { SocketContext } from "../context/SocketContext";
 const Home = () => {
   const [playerName, setPlayerName] = useState("");
   const [rooms, setRooms] = useState([]);
+  const [nameError, setNameError] = useState("");
   const socket = useContext(SocketContext);
   const history = useHistory();
+
+  // Validation du pseudo
+  const validatePlayerName = (name) => {
+    if (!name || name.length === 0) {
+      return "Player name is required";
+    }
+    if (name.length < 2) {
+      return "Name must be at least 2 characters";
+    }
+    if (name.length > 8) {
+      return "Name must be at most 8 characters";
+    }
+    if (!/^[a-zA-Z0-9]+$/.test(name)) {
+      return "Name must be alphanumeric only (letters and numbers)";
+    }
+    return "";
+  };
+
+  const handleNameChange = (e) => {
+    const name = e.target.value;
+    setPlayerName(name);
+    setNameError(validatePlayerName(name));
+  };
 
   useEffect(() => {
     // Recevoir la liste initiale des rooms disponibles
@@ -39,13 +63,19 @@ const Home = () => {
   }, [socket]);
 
   const createRoom = () => {
+    const error = validatePlayerName(playerName);
+    if (error) {
+      setNameError(error);
+      return;
+    }
     const room = Math.floor(Math.random() * 100000).toString();
     socket.emit("create-room", room);
   };
 
   const joinRoom = (room) => {
-    if (!playerName) {
-      alert("Please enter a player name");
+    const error = validatePlayerName(playerName);
+    if (error) {
+      setNameError(error);
       return;
     }
     history.push(`/${room}/${playerName}`);
@@ -56,11 +86,30 @@ const Home = () => {
       <h1>Red Tetris</h1>
       <input
         type="text"
-        placeholder="Enter your name"
+        placeholder="Enter your name (2-8 alphanumeric)"
         value={playerName}
-        onChange={(e) => setPlayerName(e.target.value)}
-        style={{ margin: "10px" }}
+        onChange={handleNameChange}
+        maxLength={8}
+        style={{
+          margin: "10px",
+          padding: "8px",
+          border: nameError ? "2px solid #f44336" : "1px solid #ccc",
+          borderRadius: "4px",
+          outline: "none",
+        }}
       />
+      {nameError && (
+        <div
+          style={{
+            color: "#f44336",
+            fontSize: "14px",
+            marginTop: "-5px",
+            marginBottom: "10px",
+          }}
+        >
+          {nameError}
+        </div>
+      )}
       <button onClick={createRoom}>Create Room</button>
 
       <h2>Available Rooms ({rooms.length})</h2>
