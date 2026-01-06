@@ -90,7 +90,7 @@ const initEngine = (io) => {
 
     socket.on("join-room", ({ room, player }) => {
       if (!games[room]) {
-        games[room] = new Game(room);
+        games[room] = new Game(room, room);
         loginfo(`Room ${room} created on join by ${player}`);
       }
 
@@ -129,7 +129,9 @@ const initEngine = (io) => {
     });
 
     socket.on("leave-room", ({ room, player }) => {
-      if (!games[room]) return;
+      if (!games[room]) {
+        games[room] = new Game(room, room);
+      }
 
       const game = games[room];
       const wasHost = game.host && game.host.name === player;

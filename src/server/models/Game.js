@@ -5,18 +5,53 @@ const { log } = require("console");
 const Piece = require("./Piece");
 const TETROMINOS = ["I", "O", "T", "S", "Z", "J", "L"];
 
-function getRandomType() {
-  const index = Math.floor(Math.random() * TETROMINOS.length);
-  return TETROMINOS[index];
-}
-
-function Game(room) {
+function Game(room, seed) {
   this.room = room;
   this.players = [];
   this.host = null;
   this.started = false;
   this.pieceQueue = [];
+
+  // Générateur déterministe avec seed
+  this.seed = seed || room;
+  this.rng = this.initRNG(this.seed);
+  this.currentBag = [];
 }
+
+Game.prototype.generateNextPiece = function () {
+  if (this.currentBag.length === 0) {
+    // Créer un nouveau bag avec tous les 7 types
+    this.currentBag = ["I", "O", "T", "S", "Z", "J", "L"];
+
+    // Mélanger avec le RNG déterministe (Fisher-Yates)
+    for (let i = this.currentBag.length - 1; i > 0; i--) {
+      const j = Math.floor(this.rng() * (i + 1));
+      [this.currentBag[i], this.currentBag[j]] = [
+        this.currentBag[j],
+        this.currentBag[i],
+      ];
+    }
+  }
+
+  const type = this.currentBag.pop();
+  const piece = new Piece(type);
+  this.pieceQueue.push(piece);
+  return piece;
+};
+
+Game.prototype.initRNG = function (seed) {
+  // Convertir la seed en nombre
+  let value = 0;
+  for (let i = 0; i < seed.length; i++) {
+    value = (value * 31 + seed.charCodeAt(i)) % 2147483647;
+  }
+
+  // Générateur LCG
+  return function () {
+    value = (value * 9301 + 49297) % 233280;
+    return value / 233280;
+  };
+};
 
 Game.prototype.addPlayer = function (player) {
   this.players.push(player);
@@ -66,12 +101,6 @@ Game.prototype.getPlayerNames = function () {
   return this.players.map((p) => p.name);
 };
 
-Game.prototype.generateNextPiece = function () {
-  const type = getRandomType();
-  const piece = new Piece(type);
-  this.pieceQueue.push(piece);
-  return piece;
-};
 Game.prototype.getNextPieceForPlayer = function (playerName) {
   const player = this.players.find((p) => p.name === playerName);
   if (!player) return null;
@@ -113,6 +142,7 @@ Game.prototype.onPlayerPlacedPiece = function (playerName) {
 Game.prototype.reset = function () {
   this.started = true;
   this.pieceQueue = [];
+  this.currentBag = [];
   this.players.forEach((p) => {
     p.pieceIndex = 0;
     p.isGameOver = false;
