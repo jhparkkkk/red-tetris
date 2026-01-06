@@ -1,7 +1,10 @@
 /**
- * Version alternative : calcule depuis le bas
+ * Calcule le spectrum d'une pile (hauteur maximale pour chaque colonne)
+ * La hauteur est la distance entre le bloc le plus haut et le bas de la grille visible
+ * @param {Array} pile - La pile du joueur (24 lignes x 10 colonnes)
+ * @returns {Array} - Tableau de 10 hauteurs (une par colonne)
  */
-export const calculateSpectrumFromBottom = (pile) => {
+export const calculateSpectrum = (pile) => {
   const numColumns = 10;
   const numRows = 24;
   const visibleOffset = 4; // Offset pour les lignes invisibles

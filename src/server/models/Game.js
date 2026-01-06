@@ -5,6 +5,9 @@ const { log } = require("console");
 const Piece = require("./Piece");
 const TETROMINOS = ["I", "O", "T", "S", "Z", "J", "L"];
 
+// 🎯 Nombre de pièces à maintenir en avance dans la queue
+const MIN_QUEUE_SIZE = 10;
+
 function Game(room, seed) {
   this.room = room;
   this.players = [];
@@ -37,6 +40,20 @@ Game.prototype.generateNextPiece = function () {
   const piece = new Piece(type);
   this.pieceQueue.push(piece);
   return piece;
+};
+
+/**
+ * 🚀 Remplit la queue avec suffisamment de pièces en avance
+ * pour éviter toute latence lors de la distribution
+ */
+Game.prototype.fillPieceQueue = function () {
+  const targetSize = this.pieceQueue.length + MIN_QUEUE_SIZE;
+
+  while (this.pieceQueue.length < targetSize) {
+    this.generateNextPiece();
+  }
+
+  loginfo(`📦 Piece queue filled: ${this.pieceQueue.length} pieces available`);
 };
 
 Game.prototype.initRNG = function (seed) {
@@ -123,17 +140,25 @@ Game.prototype.onPlayerPlacedPiece = function (playerName) {
 
   player.pieceIndex++;
 
+  // 🚀 Maintenir la queue remplie en permanence
+  // Au lieu de générer une pièce seulement quand nécessaire,
+  // on s'assure qu'il y a toujours MIN_QUEUE_SIZE pièces en avance
   const maxIndex = Math.max(...this.players.map((p) => p.pieceIndex));
-  const queueLength = this.pieceQueue.length;
+  const piecesNeeded = maxIndex + MIN_QUEUE_SIZE;
 
-  console.log(
-    `🔍 ${playerName} index: ${player.pieceIndex}, maxIndex: ${maxIndex}, queueLength: ${queueLength}`
-  );
-
-  if (maxIndex >= queueLength) {
+  // Remplir la queue si nécessaire
+  while (this.pieceQueue.length < piecesNeeded) {
     const newPiece = this.generateNextPiece();
-    console.log(`🧩 New piece generated: ${newPiece.type}`);
+    loginfo(
+      `🧩 Generated piece #${this.pieceQueue.length - 1}: ${newPiece.type}`
+    );
   }
+
+  loginfo(
+    `📊 ${playerName} index: ${player.pieceIndex}, queue length: ${
+      this.pieceQueue.length
+    }, buffer: ${this.pieceQueue.length - maxIndex}`
+  );
 
   const currentPiece = this.pieceQueue[player.pieceIndex];
   return currentPiece ? currentPiece.serialize() : null;
@@ -148,6 +173,12 @@ Game.prototype.reset = function () {
     p.isGameOver = false;
     p.isPlaying = true;
   });
+
+  // 🚀 Préremplir la queue avec des pièces en avance
+  // Ceci garantit qu'il n'y a aucune latence au début de la partie
+  this.fillPieceQueue();
+
+  loginfo(`🎮 Game reset: ${this.pieceQueue.length} pieces pre-generated`);
 };
 
 module.exports = Game;

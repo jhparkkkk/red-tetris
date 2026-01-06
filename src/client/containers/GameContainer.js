@@ -1,6 +1,7 @@
 import React from "react";
 import GameBoard from "../components/GameBoard";
 import Spectrum from "../components/Spectrum";
+import NextPiece from "../components/NextPiece"; // 🆕 Import du composant NextPiece
 import "../components/GameBoard.css";
 import { usePlayer } from "../game/usePlayer";
 import { useGame } from "../game/useGame";
@@ -9,7 +10,7 @@ import { useState, useEffect, useContext } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import { SocketContext } from "../context/SocketContext";
 import { TETRIMINOS } from "../game/tetriminos";
-import { calculateSpectrumFromBottom } from "../game/spectrumUtils";
+import { calculateSpectrum } from "../game/spectrumUtils";
 const GameContainer = () => {
   const { room, playerName } = useParams();
   const history = useHistory();
@@ -21,7 +22,8 @@ const GameContainer = () => {
   const [currentHost, setCurrentHost] = useState(null);
   const [hasWon, setHasWon] = useState(false); // ✅ NOUVEAU: Distinguer victoire
   const [opponentSpectrums, setOpponentSpectrums] = useState({});
-  const { player, setPlayer, resetPlayer } = usePlayer();
+  const { player, setPlayer, resetPlayer, nextPiece, setNextPiece } =
+    usePlayer(); // 🆕 Ajouter nextPiece et setNextPiece
 
   const handleGameOver = () => {
     console.log("💥 GAME OVER");
@@ -34,14 +36,16 @@ const GameContainer = () => {
     resetPlayer,
     handleGameOver,
     isGameOver,
-    gameStarted
+    gameStarted,
+    nextPiece, // 🆕 Passer nextPiece
+    setNextPiece // 🆕 Passer setNextPiece
   );
 
   useEffect(() => {
     if (!gameStarted || !socket || !player.name) return;
 
     const interval = setInterval(() => {
-      const mySpectrum = calculateSpectrumFromBottom(pile);
+      const mySpectrum = calculateSpectrum(pile);
 
       socket.emit("spectrum-update", {
         room: room,
@@ -144,9 +148,10 @@ const GameContainer = () => {
         });
       });
 
-      socket.on("game-started", ({ piece }) => {
-        console.log("Game started event received");
+      socket.on("game-started", ({ piece, nextPiece: serverNextPiece }) => {
+        console.log("🎮 Game started event received");
         console.log("First piece:", piece);
+        console.log("Next piece preview:", serverNextPiece);
 
         // ✅ Reset des états de victoire/défaite
         setIsGameOver(false);
@@ -163,13 +168,35 @@ const GameContainer = () => {
         });
         setOpponentSpectrums(resetSpectrums);
 
+        // 🎯 Définir la première pièce courante (celle qu'on joue maintenant)
         setPlayer({
           shape: TETRIMINOS[piece.type].shape,
           color: TETRIMINOS[piece.type].color,
-          position: { x: 3, y: 0 },
+          position: { x: 3, y: 4 }, // Démarrer à y: 4 (première ligne visible)
           name: playerName,
           room: room,
         });
+
+        // 🎯 Définir la prochaine pièce pour la preview
+        if (serverNextPiece) {
+          const nextPieceData = {
+            shape: TETRIMINOS[serverNextPiece.type].shape,
+            color: TETRIMINOS[serverNextPiece.type].color,
+            type: serverNextPiece.type,
+          };
+
+          console.log("🔍 Setting nextPiece:", nextPieceData);
+          setNextPiece(nextPieceData);
+
+          console.log(
+            "✅ Initial setup - Current:",
+            piece.type,
+            "Next:",
+            serverNextPiece.type
+          );
+        } else {
+          console.error("❌ serverNextPiece is undefined!");
+        }
 
         setGameStarted(true);
       });
@@ -293,10 +320,31 @@ const GameContainer = () => {
               flexWrap: "wrap",
             }}
           >
-            {/* Votre board */}
-            <div style={{ flex: "0 0 auto" }}>
+            {/* 🆕 Section: Votre board + NextPiece */}
+            <div
+              style={{
+                flex: "0 0 auto",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "20px",
+              }}
+            >
               <h3 style={{ color: "#4CAF50" }}>Your Board</h3>
-              <GameBoard grid={grid} />
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: "20px",
+                  alignItems: "flex-start",
+                }}
+              >
+                {/* 🆕 NextPiece Preview à gauche */}
+                <NextPiece nextPiece={nextPiece} />
+
+                {/* GameBoard au centre */}
+                <GameBoard grid={grid} />
+              </div>
             </div>
 
             {/* ✅ NOUVEAU: Spectrums des adversaires */}

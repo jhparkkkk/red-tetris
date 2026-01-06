@@ -14,7 +14,9 @@ export const useGame = (
   resetPlayer,
   handleGameOver,
   isGameOver,
-  gameStarted
+  gameStarted,
+  nextPiece,
+  setNextPiece
 ) => {
   const socket = useSocket();
   const [grid, setGrid] = useState(() =>
@@ -39,35 +41,63 @@ export const useGame = (
     setGrid(updatedGrid);
   }, [pile, player]);
 
-  // Handle next piece from the server
-  const handleNextPiece = ({ piece }) => {
-    const definition = TETRIMINOS[piece.type];
-    if (!definition) {
-      console.error("Received unknown piece type:", piece.type);
-      return;
-    }
+  const nextPieceRef = useRef(nextPiece);
 
-    const nextPiece = {
-      shape: definition.shape,
-      color: definition.color,
-      position: { x: 3, y: 0 },
-      name: playerRef.current.name,
-      room: playerRef.current.room,
-    };
-
-    resetPlayer(nextPiece);
-
-    console.log("📦 Received from server:", nextPiece);
-  };
+  useEffect(() => {
+    nextPieceRef.current = nextPiece;
+  }, [nextPiece]);
 
   // Receive next-piece events from the server
   useEffect(() => {
     if (!socket) return;
-    socket.on("next-piece", handleNextPiece);
-    return () => {
-      socket.off("next-piece", handleNextPiece);
+
+    const handleNextPieceWrapper = ({ piece }) => {
+      const definition = TETRIMINOS[piece.type];
+      if (!definition) {
+        console.error("Received unknown piece type:", piece.type);
+        return;
+      }
+
+      console.log("📦 Received next-piece from server:", piece.type);
+
+      // Si on a déjà une nextPiece, elle devient la pièce courante
+      const currentNextPiece = nextPieceRef.current;
+      if (currentNextPiece !== null) {
+        console.log(
+          "🔄 Moving nextPiece to current player:",
+          currentNextPiece.type
+        );
+
+        const currentPiece = {
+          shape: currentNextPiece.shape,
+          color: currentNextPiece.color,
+          position: { x: 3, y: 4 }, // Démarrer en haut (zone invisible)
+          name: playerRef.current.name,
+          room: playerRef.current.room,
+        };
+
+        resetPlayer(currentPiece);
+      }
+
+      // La nouvelle pièce reçue devient toujours la nextPiece
+      const newNextPiece = {
+        shape: definition.shape,
+        color: definition.color,
+        type: piece.type,
+      };
+
+      setNextPiece(newNextPiece);
+      console.log("✅ NextPiece updated to:", piece.type);
     };
-  }, [socket]);
+
+    console.log("🔌 Registering next-piece listener");
+    socket.on("next-piece", handleNextPieceWrapper);
+
+    return () => {
+      console.log("🔌 Removing next-piece listener");
+      socket.off("next-piece", handleNextPieceWrapper);
+    };
+  }, [socket, resetPlayer, setNextPiece]);
 
   useEffect(() => {
     if (!socket) return;

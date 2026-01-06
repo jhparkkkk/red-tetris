@@ -59,7 +59,7 @@ describe("useGame Logic", () => {
       const nextPiece = {
         shape: definition.shape,
         color: definition.color,
-        position: { x: 3, y: 0 },
+        position: { x: 3, y: 3 },
         name: "TestPlayer",
         room: "test-room",
       };

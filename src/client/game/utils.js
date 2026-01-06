@@ -101,18 +101,18 @@ export function clearFullRows(grid) {
 
 export function reachedTop(pile) {
   console.log("Checking if reached top");
-  for (let x = 0; x < 10; x++) {
-    console.log("Checking column", x);
-    console.log("pile[0][x]:", pile[0][x]);
-    console.log("pile[0][x]:", pile[1][x]);
 
-    console.log("pile[0][x].filled:", pile[0][x].filled);
-    if (pile[0][x].filled) {
-      console.log("Reached top at column", x);
-      return true;
+  // Vérifier les lignes 0-4 pour détecter game over
+  // Ceci permet un spawn à y: 4 tout en détectant le game over
+  for (let row = 0; row <= 4; row++) {
+    for (let col = 0; col < 10; col++) {
+      if (pile[row] && pile[row][col] && pile[row][col].filled) {
+        console.log(`Reached top at row ${row}, column ${col}`);
+        return true;
+      }
     }
   }
-  console.log("Did not reach top");
 
+  console.log("Did not reach top");
   return false;
 }

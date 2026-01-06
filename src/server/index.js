@@ -238,17 +238,21 @@ const initEngine = (io) => {
 
       game.reset();
 
-      const firstPiece = game.generateNextPiece();
+      // 🚀 Avec le système de queue, on envoie les 2 premières pièces
+      // La première est la pièce courante, la deuxième est la "next piece" preview
+      const firstPiece = game.pieceQueue[0];
+      const secondPiece = game.pieceQueue[1];
 
       io.to(room).emit("game-started", {
         piece: firstPiece.serialize(),
+        nextPiece: secondPiece.serialize(),
       });
 
       const availableRooms = getAvailableRooms();
       io.emit("rooms-update", availableRooms);
 
       loginfo(
-        `🚀 Game started in room ${room} by ${requester.name} (host), first piece: ${firstPiece.type}`
+        `🚀 Game started in room ${room} by ${requester.name} (host), first piece: ${firstPiece.type}, next: ${secondPiece.type}`
       );
       loginfo(`📋 Updated available rooms: [${availableRooms}]`);
     });
