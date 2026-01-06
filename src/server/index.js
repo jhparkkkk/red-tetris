@@ -77,6 +77,15 @@ const initEngine = (io) => {
     socket.emit("rooms", availableRooms);
     loginfo(`📋 Sent ${availableRooms.length} available room(s) to new client`);
 
+    // 🆕 Handler pour demander explicitement la liste des rooms
+    socket.on("get-rooms", () => {
+      const availableRooms = getAvailableRooms();
+      socket.emit("rooms", availableRooms);
+      loginfo(
+        `📋 Client ${socket.id} requested rooms: ${availableRooms.length} available`
+      );
+    });
+
     socket.on("create-room", (room) => {
       if (games[room]) {
         socket.emit("error", { message: "Room already exists" });

@@ -33,6 +33,11 @@ const Home = () => {
   };
 
   useEffect(() => {
+    // 🔄 Demander explicitement la liste des rooms au montage du composant
+    // Ceci est crucial pour le cas où l'utilisateur revient avec le bouton "précédent"
+    socket.emit("get-rooms");
+    console.log("📡 Requesting available rooms...");
+
     // Recevoir la liste initiale des rooms disponibles
     socket.on("rooms", (roomsList) => {
       console.log("📋 Received available rooms:", roomsList);
@@ -59,6 +64,29 @@ const Home = () => {
       socket.off("rooms");
       socket.off("rooms-update");
       socket.off("new-room");
+    };
+  }, [socket]);
+
+  // 🔄 Rafraîchir les rooms quand la page devient visible (retour avec bouton précédent)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log("👁️ Page visible again, refreshing rooms...");
+        socket.emit("get-rooms");
+      }
+    };
+
+    const handleFocus = () => {
+      console.log("🎯 Window focused, refreshing rooms...");
+      socket.emit("get-rooms");
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
     };
   }, [socket]);
 
