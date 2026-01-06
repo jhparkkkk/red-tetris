@@ -16,7 +16,8 @@ export const useGame = (
   isGameOver,
   gameStarted,
   nextPiece,
-  setNextPiece
+  setNextPiece,
+  onLinesCleared // ✅ Nouveau callback pour notifier le scoring
 ) => {
   const socket = useSocket();
   const [grid, setGrid] = useState(() =>
@@ -154,6 +155,12 @@ export const useGame = (
 
         if (clearedLines > 0) {
           console.log(`🧹 ${clearedLines} lines cleared`);
+
+          // ✅ Notifier le système de scoring
+          if (onLinesCleared) {
+            onLinesCleared(clearedLines);
+          }
+
           socket.emit("lines-cleared", {
             room: player.room,
             player: player.name,

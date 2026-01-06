@@ -1,11 +1,13 @@
 import React from "react";
 import GameBoard from "../components/GameBoard";
 import Spectrum from "../components/Spectrum";
-import NextPiece from "../components/NextPiece"; // 🆕 Import du composant NextPiece
+import NextPiece from "../components/NextPiece";
+import ScoreBoard from "../components/ScoreBoard"; // ✅ Nouveau import
 import "../components/GameBoard.css";
 import { usePlayer } from "../game/usePlayer";
 import { useGame } from "../game/useGame";
 import { useControls } from "../game/useControls";
+import { useScore } from "../game/useScore"; // ✅ Nouveau import
 import { useState, useEffect, useContext } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import { SocketContext } from "../context/SocketContext";
@@ -22,6 +24,11 @@ const GameContainer = () => {
   const [currentHost, setCurrentHost] = useState(null);
   const [hasWon, setHasWon] = useState(false); // ✅ NOUVEAU: Distinguer victoire
   const [opponentSpectrums, setOpponentSpectrums] = useState({});
+
+  // ✅ Initialiser le système de scoring
+  const { score, linesCleared, level, addLinesCleared, resetScore } =
+    useScore();
+
   const { player, setPlayer, resetPlayer, nextPiece, setNextPiece } =
     usePlayer(); // 🆕 Ajouter nextPiece et setNextPiece
 
@@ -38,7 +45,8 @@ const GameContainer = () => {
     isGameOver,
     gameStarted,
     nextPiece, // 🆕 Passer nextPiece
-    setNextPiece // 🆕 Passer setNextPiece
+    setNextPiece, // 🆕 Passer setNextPiece
+    addLinesCleared // ✅ Passer la fonction pour mettre à jour le score
   );
 
   useEffect(() => {
@@ -156,6 +164,9 @@ const GameContainer = () => {
         // ✅ Reset des états de victoire/défaite
         setIsGameOver(false);
         setHasWon(false);
+
+        // ✅ Reset du score
+        resetScore();
 
         const resetSpectrums = {};
         players.forEach((p) => {
@@ -340,7 +351,21 @@ const GameContainer = () => {
                 }}
               >
                 {/* 🆕 NextPiece Preview à gauche */}
-                <NextPiece nextPiece={nextPiece} />
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "15px",
+                  }}
+                >
+                  <NextPiece nextPiece={nextPiece} />
+                  {/* ✅ ScoreBoard sous NextPiece */}
+                  <ScoreBoard
+                    score={score}
+                    linesCleared={linesCleared}
+                    level={level}
+                  />
+                </div>
 
                 {/* GameBoard au centre */}
                 <GameBoard grid={grid} />
