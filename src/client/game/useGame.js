@@ -5,6 +5,8 @@ import {
   mergePieceWithGrid,
   clearFullRows,
   reachedTop,
+  calculateGhostPosition,
+  mergeGhostPieceWithGrid,
 } from "./utils";
 
 import { useSocket } from "../context/SocketContext";
@@ -38,9 +40,31 @@ export const useGame = (
 
   // Update the grid whenever the pile or player changes
   useEffect(() => {
-    const updatedGrid = mergePieceWithGrid(pile, player);
+    // Toujours merger d'abord la pile avec la pièce actuelle
+    let updatedGrid = mergePieceWithGrid(pile, player);
+
+    // ✅ Calculer et afficher la ghost piece UNIQUEMENT si:
+    // 1. Le jeu est démarré
+    // 2. La pièce actuelle a une forme valide
+    if (gameStarted && player.shape && player.shape.length > 0) {
+      try {
+        const ghostY = calculateGhostPosition(
+          pile,
+          player.shape,
+          player.position
+        );
+
+        // Si la ghost piece n'est pas à la même position que la pièce actuelle, l'afficher
+        if (ghostY !== player.position.y) {
+          updatedGrid = mergeGhostPieceWithGrid(updatedGrid, player, ghostY);
+        }
+      } catch (error) {
+        console.error("Error calculating ghost position:", error);
+      }
+    }
+
     setGrid(updatedGrid);
-  }, [pile, player]);
+  }, [pile, player, gameStarted]);
 
   const nextPieceRef = useRef(nextPiece);
 

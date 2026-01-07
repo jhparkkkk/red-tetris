@@ -99,3 +99,16 @@ button:hover {
   background-color: #b8b8b8 !important;
   border: 1px dashed #666;
 }
+
+/* ✅ Ghost piece (ombre de la pièce) */
+.cell.ghost {
+  opacity: 0.3 !important;
+  border: 2px solid currentColor !important;
+  background-color: transparent !important;
+}
+
+/* Mode sombre: rendre la ghost piece plus visible */
+[data-theme="dark"] .cell.ghost {
+  opacity: 0.4 !important;
+  border-width: 2px !important;
+}

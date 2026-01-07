@@ -14,7 +14,9 @@ const GameBoard = ({ grid }) => {
           {row.map((cell, colIndex) => (
             <div
               key={`${rowIndex}-${colIndex}`}
-              className={`cell ${cell.filled ? "filled" : "empty"}`}
+              className={`cell ${cell.filled ? "filled" : "empty"} ${
+                cell.isGhost ? "ghost" : ""
+              }`}
               style={{
                 backgroundColor: cell.filled ? cell.color : "transparent",
               }}

@@ -116,3 +116,60 @@ export function reachedTop(pile) {
   console.log("Did not reach top");
   return false;
 }
+
+/**
+ * Calcule la position Y où la pièce va atterrir (pour la ghost piece)
+ */
+export function calculateGhostPosition(pile, shape, position) {
+  if (!shape || shape.length === 0 || !position) {
+    return position ? position.y : 0;
+  }
+
+  let ghostY = position.y;
+  let iterations = 0;
+  const maxIterations = 25; // Protection contre boucle infinie
+
+  // Descendre jusqu'à trouver une collision
+  while (iterations < maxIterations && ghostY < 23) {
+    if (checkCollision(pile, shape, { x: position.x, y: ghostY + 1 })) {
+      break;
+    }
+    ghostY++;
+    iterations++;
+  }
+
+  return ghostY;
+}
+
+/**
+ * Merge la ghost piece avec la grille (après avoir mergé la pièce actuelle)
+ */
+export const mergeGhostPieceWithGrid = (grid, piece, ghostY) => {
+  const newGrid = grid.map((row) => [...row]);
+
+  piece.shape.forEach((row, y) => {
+    row.forEach((cell, x) => {
+      if (!cell) return;
+
+      const posY = ghostY + y;
+      const posX = piece.position.x + x;
+
+      const isValid =
+        posY >= 0 &&
+        posY < newGrid.length &&
+        posX >= 0 &&
+        posX < newGrid[0].length;
+
+      // Ne pas afficher la ghost piece si elle chevauche la pièce actuelle
+      if (isValid && !newGrid[posY][posX].filled) {
+        newGrid[posY][posX] = {
+          filled: true,
+          color: piece.color,
+          isGhost: true,
+        };
+      }
+    });
+  });
+
+  return newGrid;
+};
