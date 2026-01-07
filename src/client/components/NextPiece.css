@@ -6,6 +6,12 @@
   min-width: 120px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   display: inline-block;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+[data-theme="dark"] .next-piece-container {
+  background-color: #1a1a1a;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
 }
 
 .next-piece-title {

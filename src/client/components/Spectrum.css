@@ -5,7 +5,12 @@
   margin: 10px;
   min-width: 150px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+[data-theme="dark"] .spectrum-container {
+  background-color: #1a1a1a;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
 }
 
 .spectrum-container.game-over {
@@ -72,6 +77,7 @@
 .spectrums-title {
   font-family: 'VT323', monospace;
   font-size: 24px;
-  color: #5a524e;
+  color: var(--heading-color);
   margin-bottom: 10px;
+  transition: color 0.3s ease;
 }

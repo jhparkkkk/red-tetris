@@ -2,12 +2,14 @@ import React from "react";
 import GameBoard from "../components/GameBoard";
 import Spectrum from "../components/Spectrum";
 import NextPiece from "../components/NextPiece";
-import ScoreBoard from "../components/ScoreBoard"; // ✅ Nouveau import
+import ScoreBoard from "../components/ScoreBoard";
+import ThemeToggle from "../components/ThemeToggle"; // ✅ Dans /components/
 import "../components/GameBoard.css";
 import { usePlayer } from "../game/usePlayer";
 import { useGame } from "../game/useGame";
 import { useControls } from "../game/useControls";
-import { useScore } from "../game/useScore"; // ✅ Nouveau import
+import { useScore } from "../game/useScore";
+import { useTheme } from "../game/useTheme"; // ✅ Dans /game/
 import { useState, useEffect, useContext } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import { SocketContext } from "../context/SocketContext";
@@ -28,6 +30,9 @@ const GameContainer = () => {
   // ✅ Initialiser le système de scoring
   const { score, linesCleared, level, addLinesCleared, resetScore } =
     useScore();
+
+  // ✅ Initialiser le système de thème
+  const { isDarkMode, toggleTheme } = useTheme();
 
   const { player, setPlayer, resetPlayer, nextPiece, setNextPiece } =
     usePlayer(); // 🆕 Ajouter nextPiece et setNextPiece
@@ -251,6 +256,9 @@ const GameContainer = () => {
 
   return (
     <div style={{ textAlign: "center" }}>
+      {/* ✅ Bouton de toggle du thème */}
+      <ThemeToggle isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
+
       <h1>Red Tetris - Room {room}</h1>
 
       <div style={{ marginBottom: "20px" }}>

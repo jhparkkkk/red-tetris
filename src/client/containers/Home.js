@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useHistory } from "react-router-dom";
 import { SocketContext } from "../context/SocketContext";
+import ThemeToggle from "../components/ThemeToggle"; // ✅ Dans /components/
+import { useTheme } from "../game/useTheme"; // ✅ Dans /game/
 
 const Home = () => {
   const [playerName, setPlayerName] = useState("");
@@ -8,6 +10,9 @@ const Home = () => {
   const [nameError, setNameError] = useState("");
   const socket = useContext(SocketContext);
   const history = useHistory();
+
+  // ✅ Initialiser le système de thème
+  const { isDarkMode, toggleTheme } = useTheme();
 
   // Validation du pseudo
   const validatePlayerName = (name) => {
@@ -111,6 +116,9 @@ const Home = () => {
 
   return (
     <div style={{ textAlign: "center" }}>
+      {/* ✅ Bouton de toggle du thème */}
+      <ThemeToggle isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
+
       <h1>Red Tetris</h1>
       <input
         type="text"

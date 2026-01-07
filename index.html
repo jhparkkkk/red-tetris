@@ -2,10 +2,30 @@
 <html>
   <head>
     <title>RedTetris</title>
-    <link rel="icon" href="http://redpelicans.com/favicon.ico">                                                                                                                                          
+    <link rel="icon" href="http://redpelicans.com/favicon.ico">
+    <style>
+      body {
+        background-color: #f4f1ee;
+        margin: 0;
+        transition: background-color 0.3s ease;
+      }
+    </style>
   </head>
   <body>
     <div id="tetris"></div>
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('tetris-theme');
+          if (theme === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    
+    <noscript>You need to enable JavaScript to run this app.</noscript>
     <script src="/bundle.js"></script>
+    <div id="root"></div>
   </body>
 </html>
