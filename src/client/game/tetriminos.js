@@ -2,8 +2,8 @@ export const TETRIMINOS = {
   I: {
     shape: [
       [0, 0, 0, 0],
-      [0, 0, 0, 0],
       ["I", "I", "I", "I"],
+      [0, 0, 0, 0],
       [0, 0, 0, 0],
     ],
     color: "#6FC5D6",

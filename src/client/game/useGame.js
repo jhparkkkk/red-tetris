@@ -72,7 +72,7 @@ export const useGame = (
         const currentPiece = {
           shape: currentNextPiece.shape,
           color: currentNextPiece.color,
-          position: { x: 3, y: 4 }, // Démarrer en haut (zone invisible)
+          position: { x: 3, y: 3 }, // Démarrer en haut (zone invisible)
           name: playerRef.current.name,
           room: playerRef.current.room,
         };

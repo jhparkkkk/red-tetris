@@ -4,7 +4,7 @@ export const usePlayer = () => {
   const [player, setPlayer] = useState({
     shape: [],
     color: null,
-    position: { x: 3, y: 4 }, // Démarrer en haut (zone invisible)
+    position: { x: 3, y: 3 }, // Démarrer en haut (zone invisible)
     name: null,
     room: null,
   });

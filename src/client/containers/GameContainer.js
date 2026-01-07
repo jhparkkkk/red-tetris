@@ -183,7 +183,7 @@ const GameContainer = () => {
         setPlayer({
           shape: TETRIMINOS[piece.type].shape,
           color: TETRIMINOS[piece.type].color,
-          position: { x: 3, y: 4 }, // Démarrer à y: 4 (première ligne visible)
+          position: { x: 3, y: 3 }, // Démarrer à y: 4 (première ligne visible)
           name: playerName,
           room: room,
         });
