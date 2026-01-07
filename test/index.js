@@ -11,11 +11,7 @@ import "./redux1";
 import "./server1";
 
 // Import des nouveaux tests
-import "./unit/game/game.test";
-import "./unit/game/utils.tests";
-import "./unit/models/utils.tests";
-import "./unit/game/useGame.test";
-import "./unit/models/useGame.test";
-import "./unit/models/spectrum.tests";
+import "./unit/game/utils.test";
+import "./unit/game/spectrumutils.test";
 
 console.log("All tests loaded");
