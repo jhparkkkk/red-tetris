@@ -268,7 +268,7 @@ const GameContainer = () => {
             <li key={`${p}-${index}`} style={{ margin: "5px 0" }}>
               {p}
               {p === playerName && " (You)"}
-              {p === currentHost && " 👑 Host"}
+              {p === currentHost && " Host"}
             </li>
           ))}
         </ul>
