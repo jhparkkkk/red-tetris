@@ -1,6 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
-/* ✅ Variables pour le mode clair (défaut) */
 :root {
   --bg-color: #f4f1ee;
   --text-color: #3e3e3e;
@@ -12,7 +11,6 @@
   --board-border-outer: #d4c6b8;
 }
 
-/* ✅ Variables pour le mode sombre */
 [data-theme="dark"] {
   --bg-color: #1a1a1a;
   --text-color: #e0e0e0;
@@ -100,15 +98,8 @@ button:hover {
   border: 1px dashed #666;
 }
 
-/* ✅ Ghost piece (ombre de la pièce) */
 .cell.ghost {
-  opacity: 0.3 !important;
-  border: 2px solid currentColor !important;
-  background-color: transparent !important;
-}
-
-/* Mode sombre: rendre la ghost piece plus visible */
-[data-theme="dark"] .cell.ghost {
-  opacity: 0.4 !important;
-  border-width: 2px !important;
+  background-color: rgba(180, 180, 180, 0.3) !important;
+  border: 2px solid rgba(180, 180, 180, 0.5) !important;
+  border-radius: 4px;
 }
