@@ -49,3 +49,5 @@ jest-test-results.json
 
 # IntelliJ / JetBrains
 .idea/
+
+.nyc_output
