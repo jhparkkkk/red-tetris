@@ -28,8 +28,9 @@ import "./unit/hook/useNextPiece.test";
 import "./unit/hook/usePlayer.test";
 import "./unit/hook/useTheme.test";
 import "./unit/hook/useControls.test";
-
 import "./unit/hook/useScore.test";
-
+import "./unit/hook/useControlsKeyboard.test";
 import "./integration/server.test";
+import "./unit/hook/useControlsHook.test";
+import "./unit/middleware/middleware.test";
 console.log("All tests loaded");

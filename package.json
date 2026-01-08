@@ -62,6 +62,10 @@
     "webpack-hot-middleware": "^2.10.0"
   },
   "nyc": {
+    "all": true,
+  "include": [
+    "src/**/*.js"
+  ],
     "exclude": [
       "build"
     ]
