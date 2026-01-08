@@ -13,16 +13,7 @@ const App = () => {
     <Router>
       <Switch>
         <Route exact path="/" component={Home} />
-        <Route
-          path="/:room/:playerName"
-          render={(props) => {
-            if (props.location.state && props.location.state.fromButton) {
-              return <GameContainer {...props} />;
-            } else {
-              return <Redirect to="/" />;
-            }
-          }}
-        />
+        <Route path="/:room/:playerName" component={GameContainer} />
         <Route path="*">
           <Redirect to="/" />
         </Route>

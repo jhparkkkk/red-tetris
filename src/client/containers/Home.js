@@ -103,7 +103,7 @@ const Home = () => {
     }
     const room = Math.floor(Math.random() * 100000).toString();
     socket.emit("create-room", room);
-    history.push(`/${room}/${playerName}`, { fromButton: true });
+    history.push(`/${room}/${playerName}`);
   };
 
   const joinRoom = (room) => {
@@ -112,7 +112,7 @@ const Home = () => {
       setNameError(error);
       return;
     }
-    history.push(`/${room}/${playerName}`, { fromButton: true });
+    history.push(`/${room}/${playerName}`);
   };
 
   return (
