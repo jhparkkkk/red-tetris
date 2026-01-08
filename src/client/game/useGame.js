@@ -5,6 +5,8 @@ import {
   mergePieceWithGrid,
   clearFullRows,
   reachedTop,
+  calculateGhostPosition,
+  mergeGhostPieceWithGrid,
 } from "./utils";
 
 import { useSocket } from "../context/SocketContext";
@@ -14,7 +16,10 @@ export const useGame = (
   resetPlayer,
   handleGameOver,
   isGameOver,
-  gameStarted
+  gameStarted,
+  nextPiece,
+  setNextPiece,
+  onLinesCleared // ✅ Nouveau callback pour notifier le scoring
 ) => {
   const socket = useSocket();
   const [grid, setGrid] = useState(() =>
@@ -35,37 +40,117 @@ export const useGame = (
 
   // Update the grid whenever the pile or player changes
   useEffect(() => {
-    const updatedGrid = mergePieceWithGrid(pile, player);
-    setGrid(updatedGrid);
-  }, [pile, player]);
+    // Toujours merger d'abord la pile avec la pièce actuelle
+    let updatedGrid = mergePieceWithGrid(pile, player);
 
-  // Handle next piece from the server
-  const handleNextPiece = ({ piece }) => {
-    const definition = TETRIMINOS[piece.type];
-    if (!definition) {
-      console.error("Received unknown piece type:", piece.type);
-      return;
+    // ✅ Calculer et afficher la ghost piece UNIQUEMENT si:
+    // 1. Le jeu est démarré
+    // 2. La pièce actuelle a une forme valide
+    if (gameStarted && player.shape && player.shape.length > 0) {
+      try {
+        const ghostY = calculateGhostPosition(
+          pile,
+          player.shape,
+          player.position
+        );
+
+        // Si la ghost piece n'est pas à la même position que la pièce actuelle, l'afficher
+        if (ghostY !== player.position.y) {
+          updatedGrid = mergeGhostPieceWithGrid(updatedGrid, player, ghostY);
+        }
+      } catch (error) {
+        console.error("Error calculating ghost position:", error);
+      }
     }
 
-    const nextPiece = {
-      shape: definition.shape,
-      color: definition.color,
-      position: { x: 3, y: -2 },
-      name: playerRef.current.name,
-      room: playerRef.current.room,
-    };
+    setGrid(updatedGrid);
+  }, [pile, player, gameStarted]);
 
-    resetPlayer(nextPiece);
+  const nextPieceRef = useRef(nextPiece);
 
-    console.log("📦 Received from server:", nextPiece);
-  };
+  useEffect(() => {
+    nextPieceRef.current = nextPiece;
+  }, [nextPiece]);
 
   // Receive next-piece events from the server
   useEffect(() => {
     if (!socket) return;
-    socket.on("next-piece", handleNextPiece);
+
+    const handleNextPieceWrapper = ({ piece }) => {
+      const definition = TETRIMINOS[piece.type];
+      if (!definition) {
+        console.error("Received unknown piece type:", piece.type);
+        return;
+      }
+
+      console.log("📦 Received next-piece from server:", piece.type);
+
+      // Si on a déjà une nextPiece, elle devient la pièce courante
+      const currentNextPiece = nextPieceRef.current;
+      if (currentNextPiece !== null) {
+        console.log(
+          "🔄 Moving nextPiece to current player:",
+          currentNextPiece.type
+        );
+
+        const currentPiece = {
+          shape: currentNextPiece.shape,
+          color: currentNextPiece.color,
+          position: { x: 3, y: 3 }, // Démarrer en haut (zone invisible)
+          name: playerRef.current.name,
+          room: playerRef.current.room,
+        };
+
+        resetPlayer(currentPiece);
+      }
+
+      // La nouvelle pièce reçue devient toujours la nextPiece
+      const newNextPiece = {
+        shape: definition.shape,
+        color: definition.color,
+        type: piece.type,
+      };
+
+      setNextPiece(newNextPiece);
+      console.log("✅ NextPiece updated to:", piece.type);
+    };
+
+    console.log("🔌 Registering next-piece listener");
+    socket.on("next-piece", handleNextPieceWrapper);
+
     return () => {
-      socket.off("next-piece", handleNextPiece);
+      console.log("🔌 Removing next-piece listener");
+      socket.off("next-piece", handleNextPieceWrapper);
+    };
+  }, [socket, resetPlayer, setNextPiece]);
+
+  useEffect(() => {
+    if (!socket) return;
+    console.log("🔌 Socket connected, setting up listeners");
+    const handlePenalty = ({ count }) => {
+      console.log(`🔌🔌🔌 Received penalty of ${count} lines`);
+
+      setPile((prevPile) => {
+        const width = prevPile[0].length;
+
+        const newLines = Array.from({ length: count }, () =>
+          Array.from({ length: width }, () => ({
+            filled: true,
+            color: "grey",
+            indestructible: true,
+          }))
+        );
+
+        const newPile = [...prevPile.slice(count), ...newLines];
+
+        console.log("New pile after adding penalty lines:", newPile);
+        return newPile;
+      });
+    };
+
+    socket.on("receive-penalty", handlePenalty);
+    return () => {
+      socket.off("receive-penalty", handlePenalty);
     };
   }, [socket]);
 
@@ -94,6 +179,17 @@ export const useGame = (
 
         if (clearedLines > 0) {
           console.log(`🧹 ${clearedLines} lines cleared`);
+
+          // ✅ Notifier le système de scoring
+          if (onLinesCleared) {
+            onLinesCleared(clearedLines);
+          }
+
+          socket.emit("lines-cleared", {
+            room: player.room,
+            player: player.name,
+            lines: clearedLines,
+          });
         }
 
         if (reachedTop(newPile)) {

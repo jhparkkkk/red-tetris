@@ -1,0 +1,83 @@
+.spectrum-container {
+  background-color: #2d2d2d;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 10px;
+  min-width: 150px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+[data-theme="dark"] .spectrum-container {
+  background-color: #1a1a1a;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+.spectrum-container.game-over {
+  opacity: 0.5;
+  background-color: #1a1a1a;
+}
+
+.spectrum-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid #444;
+}
+
+.spectrum-player-name {
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  color: #f0f0f0;
+  font-weight: bold;
+}
+
+.spectrum-status {
+  font-size: 16px;
+}
+
+.spectrum-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 100px;
+  background-color: #1a1a1a;
+  border-radius: 4px;
+  padding: 5px;
+  gap: 2px;
+}
+
+.spectrum-column {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  background-color: #333;
+  border-radius: 2px;
+}
+
+.spectrum-bar {
+  width: 100%;
+  transition: height 0.2s ease, background-color 0.2s ease;
+  border-radius: 2px 2px 0 0;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Container pour tous les spectrums */
+.spectrums-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px;
+  gap: 10px;
+}
+
+.spectrums-title {
+  font-family: 'VT323', monospace;
+  font-size: 24px;
+  color: var(--heading-color);
+  margin-bottom: 10px;
+  transition: color 0.3s ease;
+}
