@@ -24,6 +24,7 @@ const Home = () => {
   const createRoom = () => {
     const room = Math.floor(Math.random() * 100000).toString();
     socket.emit("create-room", room);
+    history.push(`/${room}/${playerName}`, { fromButton: true });
   };
 
   const joinRoom = (room) => {
@@ -31,7 +32,7 @@ const Home = () => {
       alert("Please enter a player name");
       return;
     }
-    history.push(`/${room}/${playerName}`);
+    history.push(`/${room}/${playerName}`, { fromButton: true });
   };
 
   return (
