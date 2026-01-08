@@ -1,3 +1,5 @@
+.PHONY: all stop test
+
 all:
 	npm install
 	npm run client-dist
@@ -6,3 +8,6 @@ all:
 
 stop:
 	pkill -f "node dist/server/main.js"
+
+test:
+	npm run coverage
