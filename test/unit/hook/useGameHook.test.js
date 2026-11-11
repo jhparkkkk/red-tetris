@@ -26,25 +26,28 @@ const createMockSocket = () => {
   };
 };
 
-// Mock du SocketContext
 let mockSocket = createMockSocket();
 
-// Mock du module SocketContext
-const mockUseSocket = () => mockSocket;
+// useGame talks to the socket by dispatching actions: run them through the
+// real socket middleware, connected to the mock socket
+const { createSocketMiddleware } = require("../../../src/client/middleware/socketMiddleware");
+const mockDispatch = (action) =>
+  createSocketMiddleware(mockSocket)()(() => {})(action);
 
-// Utiliser require pour avoir le vrai useGame après avoir mocké useSocket
+// Utiliser require pour avoir le vrai useGame après avoir mocké useDispatch
 describe("useGame Hook - Full Coverage", () => {
   let useGame;
-  let SocketContext;
+  const Module = require("module");
+  const originalRequire = Module.prototype.require;
 
   before(() => {
-    // Mock le useSocket avant d'importer useGame
-    const Module = require("module");
-    const originalRequire = Module.prototype.require;
-
+    // Mock useDispatch avant d'importer useGame
     Module.prototype.require = function (id) {
-      if (id === "../context/SocketContext" || id.includes("SocketContext")) {
-        return { useSocket: mockUseSocket };
+      if (id === "react-redux") {
+        return {
+          ...originalRequire.apply(this, arguments),
+          useDispatch: () => mockDispatch,
+        };
       }
       return originalRequire.apply(this, arguments);
     };
@@ -52,6 +55,10 @@ describe("useGame Hook - Full Coverage", () => {
     // Maintenant on peut importer useGame
     const useGameModule = require("../../../src/client/game/useGame");
     useGame = useGameModule.useGame;
+  });
+
+  after(() => {
+    Module.prototype.require = originalRequire;
   });
 
   beforeEach(() => {

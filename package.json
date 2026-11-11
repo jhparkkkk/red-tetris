@@ -68,6 +68,7 @@
       "src/client/components/**/*.js",
       "src/client/game/**/*.js",
       "src/client/reducers/**/*.js",
+      "src/client/middleware/**/*.js",
       "src/server/index.js",
       "src/server/models/**/*.js"
     ],
@@ -78,7 +79,7 @@
       "src/server/main.js",
       "src/client/containers/**/*.js",
       "src/client/context/**/*.js",
-      "src/client/middleware/**/*.js"
+      "src/client/middleware/storeStateMiddleWare.js"
     ],
     "sourceMap": false,
     "instrument": true,

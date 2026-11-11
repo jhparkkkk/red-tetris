@@ -310,6 +310,14 @@ describe("Server - Game Model", () => {
       expect(game.players[0].pieceIndex).to.equal(initialIndex + 1);
     });
 
+    it("should send the piece after the preview when a piece is placed", () => {
+      game.reset();
+      // game-started gave pieces #0 (current) and #1 (preview)
+      const piece = game.onPlayerPlacedPiece("Alice");
+
+      expect(piece).to.deep.equal(game.pieceQueue[2].serialize());
+    });
+
     it("should maintain queue ahead of player", () => {
       const initialQueueLength = game.pieceQueue.length;
 

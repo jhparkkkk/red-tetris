@@ -4,27 +4,28 @@ import createLogger from "redux-logger";
 import thunk from "redux-thunk";
 import { createStore, applyMiddleware } from "redux";
 import { Provider } from "react-redux";
-import { storeStateMiddleWare } from "./middleware/storeStateMiddleWare";
+import { socketMiddleware } from "./middleware/socketMiddleware";
 import reducer from "./reducers";
 import App from "./containers/app";
 import { alert } from "./actions/alert";
 import "./global.css";
-import { SocketProvider } from './context/SocketContext';
 
 const initialState = {};
 
 const store = createStore(
   reducer,
   initialState,
-  applyMiddleware(thunk, createLogger())
+  applyMiddleware(
+    thunk,
+    socketMiddleware(`http://${window.location.hostname}:3004`),
+    createLogger()
+  )
 );
 
 ReactDom.render(
-  <SocketProvider>
-    <Provider store={store}>
-      <App />
-    </Provider>
-  </SocketProvider>,
+  <Provider store={store}>
+    <App />
+  </Provider>,
   document.getElementById("tetris")
 );
 

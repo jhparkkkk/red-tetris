@@ -10,15 +10,16 @@ import { useGame } from "../game/useGame";
 import { useControls } from "../game/useControls";
 import { useScore } from "../game/useScore";
 import { useTheme } from "../game/useTheme"; // ✅ Dans /game/
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useHistory } from "react-router-dom";
-import { SocketContext } from "../context/SocketContext";
+import { useDispatch } from "react-redux";
+import { emit, on, off } from "../actions/server";
 import { TETRIMINOS } from "../game/tetriminos";
 import { calculateSpectrum } from "../game/spectrumUtils";
 const GameContainer = () => {
   const { room, playerName } = useParams();
   const history = useHistory();
-  const socket = useContext(SocketContext);
+  const dispatch = useDispatch();
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
   const [players, setPlayers] = useState([]);
@@ -43,7 +44,7 @@ const GameContainer = () => {
     setHasWon(false); // ✅ Défaite, pas une victoire
   };
 
-  const { grid, pile } = useGame(
+  const { grid, pile, lockPiece } = useGame(
     player,
     resetPlayer,
     handleGameOver,
@@ -55,26 +56,24 @@ const GameContainer = () => {
   );
 
   useEffect(() => {
-    if (!gameStarted || !socket || !player.name) return;
+    if (!gameStarted || !player.name) return;
 
     const interval = setInterval(() => {
       const mySpectrum = calculateSpectrum(pile);
 
-      socket.emit("spectrum-update", {
+      dispatch(emit("spectrum-update", {
         room: room,
         player: playerName,
         spectrum: mySpectrum,
-      });
+      }));
     }, 500); // Mise à jour toutes les 500ms
 
     return () => clearInterval(interval);
-  }, [gameStarted, pile, socket, room, playerName]);
+  }, [gameStarted, pile, dispatch, room, playerName]);
 
   // ✅ NOUVEAU: Recevoir les spectrums des adversaires
   useEffect(() => {
-    if (!socket) return;
-
-    socket.on("opponent-spectrum", ({ player, spectrum }) => {
+    dispatch(on("opponent-spectrum", ({ player, spectrum }) => {
       setOpponentSpectrums((prev) => {
         const prevPlayer = prev[player];
         return {
@@ -85,15 +84,15 @@ const GameContainer = () => {
           },
         };
       });
-    });
+    }));
 
     return () => {
-      socket.off("opponent-spectrum");
+      dispatch(off("opponent-spectrum"));
     };
-  }, [socket]);
+  }, [dispatch]);
 
   useEffect(() => {
-    socket.on("game-won", ({ winner }) => {
+    dispatch(on("game-won", ({ winner }) => {
       console.log(`🏆 Winner: ${winner}`);
 
       if (winner === playerName) {
@@ -107,20 +106,20 @@ const GameContainer = () => {
         setIsGameOver(true);
         alert(`🏆 ${winner} won the game!`);
       }
-    });
+    }));
 
     return () => {
-      socket.off("game-won");
+      dispatch(off("game-won"));
     };
-  }, [socket, playerName]);
+  }, [dispatch, playerName]);
 
   useEffect(() => {
     console.log("GameContainer mounted with params:", { room, playerName });
     if (room && playerName) {
       console.log("Emitting join-room");
-      socket.emit("join-room", { room, player: playerName });
+      dispatch(emit("join-room", { room, player: playerName }));
 
-      socket.on("player-joined", ({ players, host }) => {
+      dispatch(on("player-joined", ({ players, host }) => {
         console.log("Players in room:", players, "Host:", host);
         setPlayers(players);
         setCurrentHost(host);
@@ -136,9 +135,9 @@ const GameContainer = () => {
           }
         });
         setOpponentSpectrums(newSpectrums);
-      });
+      }));
 
-      socket.on("host-changed", ({ newHost, oldHost }) => {
+      dispatch(on("host-changed", ({ newHost, oldHost }) => {
         console.log(`👑 Host changed from ${oldHost} to ${newHost}`);
         setCurrentHost(newHost);
         setIsHost(newHost === playerName);
@@ -146,9 +145,9 @@ const GameContainer = () => {
         if (newHost === playerName) {
           alert(`👑 You are now the host! You can start/restart the game.`);
         }
-      });
+      }));
 
-      socket.on("player-left", ({ player: leftPlayer, players, host }) => {
+      dispatch(on("player-left", ({ player: leftPlayer, players, host }) => {
         console.log(`🚪 ${leftPlayer} left the room`);
         setPlayers(players);
         setCurrentHost(host);
@@ -159,9 +158,9 @@ const GameContainer = () => {
           delete updated[leftPlayer];
           return updated;
         });
-      });
+      }));
 
-      socket.on("game-started", ({ piece, nextPiece: serverNextPiece }) => {
+      dispatch(on("game-started", ({ piece, nextPiece: serverNextPiece }) => {
         console.log("🎮 Game started event received");
         console.log("First piece:", piece);
         console.log("Next piece preview:", serverNextPiece);
@@ -215,9 +214,9 @@ const GameContainer = () => {
         }
 
         setGameStarted(true);
-      });
+      }));
 
-      socket.on("game-over", ({ player: deadPlayer }) => {
+      dispatch(on("game-over", ({ player: deadPlayer }) => {
         console.log(`💀 ${deadPlayer} is game over`);
         setOpponentSpectrums((prev) => ({
           ...prev,
@@ -226,33 +225,34 @@ const GameContainer = () => {
             isGameOver: true,
           },
         }));
-      });
+      }));
 
-      socket.on("error", ({ message }) => {
+      dispatch(on("error", ({ message }) => {
         console.log("Server error:", message);
         alert(`Error: ${message}`);
-      });
+      }));
 
       return () => {
         console.log("Leaving room:", room);
-        socket.emit("leave-room", { room, player: playerName });
-        socket.off("player-joined");
-        socket.off("host-changed");
-        socket.off("player-left");
-        socket.off("game-started");
-        socket.off("error");
+        dispatch(emit("leave-room", { room, player: playerName }));
+        dispatch(off("player-joined"));
+        dispatch(off("host-changed"));
+        dispatch(off("player-left"));
+        dispatch(off("game-started"));
+        dispatch(off("game-over"));
+        dispatch(off("error"));
       };
     } else {
       console.error("Missing room or playerName in URL params");
     }
-  }, [socket, room, playerName]);
+  }, [dispatch, room, playerName]);
 
   const startGame = () => {
     console.log("Emitting start-game event for room:", room);
-    socket.emit("start-game", { room });
+    dispatch(emit("start-game", { room }));
   };
 
-  useControls({ player, setPlayer, pile, isGameOver });
+  useControls({ player, setPlayer, pile, isGameOver, lockPiece });
 
   return (
     <div style={{ textAlign: "center" }}>

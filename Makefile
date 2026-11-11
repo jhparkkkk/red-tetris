@@ -7,7 +7,7 @@ all:
 	DEBUG=tetris:* node dist/server/main.js
 
 stop:
-	pkill -f "node dist/server/main.js"
+	pkill -f "[n]ode dist/server/main.js"
 
 test:
 	npm run coverage
