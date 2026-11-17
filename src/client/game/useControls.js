@@ -1,7 +1,13 @@
 import { useEffect, useCallback } from "react";
 import { checkCollision } from "./utils";
 
-export const useControls = ({ player, setPlayer, pile, isGameOver }) => {
+export const useControls = ({
+  player,
+  setPlayer,
+  pile,
+  isGameOver,
+  lockPiece,
+}) => {
   const move = useCallback(
     (dx, dy) => {
       const newPos = {
@@ -12,10 +18,10 @@ export const useControls = ({ player, setPlayer, pile, isGameOver }) => {
       const hasCollision = checkCollision(pile, player.shape, newPos);
 
       if (!hasCollision) {
-        setPlayer({
-          ...player,
-          position: newPos,
-        });
+        // Ignored if the piece got locked in the meantime (hard drop)
+        setPlayer((prev) =>
+          prev.locked ? prev : { ...player, position: newPos }
+        );
       } else if (dy === 1) {
       }
     },
@@ -34,11 +40,15 @@ export const useControls = ({ player, setPlayer, pile, isGameOver }) => {
       dropY++;
     }
 
-    setPlayer({
+    const droppedPlayer = {
       ...player,
       position: { ...player.position, y: dropY },
-    });
-  }, [pile, player, setPlayer]);
+    };
+
+    // The piece is frozen right away: no last-moment move after a hard drop
+    if (lockPiece) lockPiece(droppedPlayer);
+    else setPlayer(droppedPlayer);
+  }, [pile, player, setPlayer, lockPiece]);
 
   const rotate = (matrix) =>
     matrix[0].map((_, i) => matrix.map((row) => row[i])).reverse();
@@ -52,11 +62,11 @@ export const useControls = ({ player, setPlayer, pile, isGameOver }) => {
       const newPos = { x: originalPos.x + offset, y: originalPos.y };
 
       if (!checkCollision(pile, rotatedShape, newPos)) {
-        setPlayer((prev) => ({
-          ...prev,
-          shape: rotatedShape,
-          position: newPos,
-        }));
+        setPlayer((prev) =>
+          prev.locked
+            ? prev
+            : { ...prev, shape: rotatedShape, position: newPos }
+        );
         return;
       }
     }
@@ -66,7 +76,7 @@ export const useControls = ({ player, setPlayer, pile, isGameOver }) => {
 
   const handleKeyDown = useCallback(
     (e) => {
-      if (isGameOver) return;
+      if (isGameOver || player.locked) return;
       //if (e.repeat) return;
       e.preventDefault();
 
@@ -90,7 +100,7 @@ export const useControls = ({ player, setPlayer, pile, isGameOver }) => {
           break;
       }
     },
-    [isGameOver, move, hardDrop, rotatePiece]
+    [isGameOver, player.locked, move, hardDrop, rotatePiece]
   );
 
   useEffect(() => {

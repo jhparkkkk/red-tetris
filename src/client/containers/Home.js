@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import { useHistory } from "react-router-dom";
-import { SocketContext } from "../context/SocketContext";
+import { useDispatch } from "react-redux";
+import { emit, on, off } from "../actions/server";
 import ThemeToggle from "../components/ThemeToggle"; // ✅ Dans /components/
 import { useTheme } from "../game/useTheme"; // ✅ Dans /game/
 
@@ -8,7 +9,7 @@ const Home = () => {
   const [playerName, setPlayerName] = useState("");
   const [rooms, setRooms] = useState([]);
   const [nameError, setNameError] = useState("");
-  const socket = useContext(SocketContext);
+  const dispatch = useDispatch();
   const history = useHistory();
 
   // ✅ Initialiser le système de thème
@@ -40,50 +41,50 @@ const Home = () => {
   useEffect(() => {
     // 🔄 Demander explicitement la liste des rooms au montage du composant
     // Ceci est crucial pour le cas où l'utilisateur revient avec le bouton "précédent"
-    socket.emit("get-rooms");
+    dispatch(emit("get-rooms"));
     console.log("📡 Requesting available rooms...");
 
     // Recevoir la liste initiale des rooms disponibles
-    socket.on("rooms", (roomsList) => {
+    dispatch(on("rooms", (roomsList) => {
       console.log("📋 Received available rooms:", roomsList);
       setRooms(roomsList);
-    });
+    }));
 
     // ✅ NOUVEAU: Recevoir les mises à jour dynamiques
-    socket.on("rooms-update", (roomsList) => {
+    dispatch(on("rooms-update", (roomsList) => {
       console.log("🔄 Rooms updated:", roomsList);
       setRooms(roomsList);
-    });
+    }));
 
     // Ajouter une nouvelle room créée
-    socket.on("new-room", (room) => {
+    dispatch(on("new-room", (room) => {
       console.log("✨ New room created:", room);
       setRooms((prev) => {
         // Éviter les doublons
         if (prev.includes(room)) return prev;
         return [...prev, room];
       });
-    });
+    }));
 
     return () => {
-      socket.off("rooms");
-      socket.off("rooms-update");
-      socket.off("new-room");
+      dispatch(off("rooms"));
+      dispatch(off("rooms-update"));
+      dispatch(off("new-room"));
     };
-  }, [socket]);
+  }, [dispatch]);
 
   // 🔄 Rafraîchir les rooms quand la page devient visible (retour avec bouton précédent)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         console.log("👁️ Page visible again, refreshing rooms...");
-        socket.emit("get-rooms");
+        dispatch(emit("get-rooms"));
       }
     };
 
     const handleFocus = () => {
       console.log("🎯 Window focused, refreshing rooms...");
-      socket.emit("get-rooms");
+      dispatch(emit("get-rooms"));
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -93,7 +94,7 @@ const Home = () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleFocus);
     };
-  }, [socket]);
+  }, [dispatch]);
 
   const createRoom = () => {
     const error = validatePlayerName(playerName);
@@ -102,7 +103,7 @@ const Home = () => {
       return;
     }
     const room = Math.floor(Math.random() * 100000).toString();
-    socket.emit("create-room", room);
+    dispatch(emit("create-room", room));
     history.push(`/${room}/${playerName}`);
   };
 

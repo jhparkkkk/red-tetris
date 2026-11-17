@@ -38,6 +38,12 @@ const getAvailableRooms = () => {
   return Object.keys(games).filter((roomName) => !games[roomName].started);
 };
 
+// The game is over: new players can join the room again until the host restarts
+const endGame = (game, io) => {
+  game.started = false;
+  io.emit("rooms-update", getAvailableRooms());
+};
+
 const checkForAutoWin = (game, room, io) => {
   if (!game.started) return;
 
@@ -58,11 +64,13 @@ const checkForAutoWin = (game, room, io) => {
     );
 
     io.to(room).emit("game-won", { winner });
+    endGame(game, io);
     return true;
   }
 
   if (activePlayers.length === 0) {
     loginfo(`⚠️ No active players left in room ${room}, game over`);
+    endGame(game, io);
     return true;
   }
 
@@ -137,16 +145,20 @@ const initEngine = (io) => {
       });
     });
 
-    socket.on("leave-room", ({ room, player }) => {
-      if (!games[room]) {
-        games[room] = new Game(room, room);
-      }
-
+    socket.on("leave-room", ({ room }) => {
       const game = games[room];
+      socket.leave(room);
+
+      // Identify the player by its socket: a client refused for a duplicate
+      // name must not remove the player who really owns that name
+      const leavingPlayer =
+        game && game.players.find((p) => p.socket.id === socket.id);
+      if (!leavingPlayer) return;
+
+      const player = leavingPlayer.name;
       const wasHost = game.host && game.host.name === player;
 
       game.removePlayer(player);
-      socket.leave(room);
 
       loginfo(`🚪 ${player} left room ${room}. Was host: ${wasHost}`);
 
@@ -336,6 +348,7 @@ const initEngine = (io) => {
         currentPlayer.isGameOver = true;
         currentPlayer.isPlaying = false;
         loginfo(`Player ${player} is now in Game Over in room ${room}`);
+        socket.to(room).emit("game-over", { player });
       }
 
       checkForAutoWin(game, room, io);

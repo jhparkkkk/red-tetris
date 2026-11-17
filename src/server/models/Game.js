@@ -160,8 +160,10 @@ Game.prototype.onPlayerPlacedPiece = function (playerName) {
     }, buffer: ${this.pieceQueue.length - maxIndex}`
   );
 
-  const currentPiece = this.pieceQueue[player.pieceIndex];
-  return currentPiece ? currentPiece.serialize() : null;
+  // The client already has piece #pieceIndex as its preview:
+  // send the one after it as the new preview
+  const nextPiece = this.pieceQueue[player.pieceIndex + 1];
+  return nextPiece ? nextPiece.serialize() : null;
 };
 
 Game.prototype.reset = function () {

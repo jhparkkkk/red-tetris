@@ -9,7 +9,8 @@ import {
   mergeGhostPieceWithGrid,
 } from "./utils";
 
-import { useSocket } from "../context/SocketContext";
+import { useDispatch } from "react-redux";
+import { emit, on, off } from "../actions/server";
 import { TETRIMINOS } from "./tetriminos";
 export const useGame = (
   player,
@@ -21,7 +22,7 @@ export const useGame = (
   setNextPiece,
   onLinesCleared // ✅ Nouveau callback pour notifier le scoring
 ) => {
-  const socket = useSocket();
+  const dispatch = useDispatch();
   const [grid, setGrid] = useState(() =>
     mergePieceWithGrid(createEmptyGrid(), player)
   );
@@ -41,12 +42,13 @@ export const useGame = (
   // Update the grid whenever the pile or player changes
   useEffect(() => {
     // Toujours merger d'abord la pile avec la pièce actuelle
-    let updatedGrid = mergePieceWithGrid(pile, player);
+    // A locked piece is already part of the pile
+    let updatedGrid = player.locked ? pile : mergePieceWithGrid(pile, player);
 
     // ✅ Calculer et afficher la ghost piece UNIQUEMENT si:
     // 1. Le jeu est démarré
     // 2. La pièce actuelle a une forme valide
-    if (gameStarted && player.shape && player.shape.length > 0) {
+    if (gameStarted && !player.locked && player.shape && player.shape.length > 0) {
       try {
         const ghostY = calculateGhostPosition(
           pile,
@@ -74,8 +76,6 @@ export const useGame = (
 
   // Receive next-piece events from the server
   useEffect(() => {
-    if (!socket) return;
-
     const handleNextPieceWrapper = ({ piece }) => {
       const definition = TETRIMINOS[piece.type];
       if (!definition) {
@@ -116,17 +116,16 @@ export const useGame = (
     };
 
     console.log("🔌 Registering next-piece listener");
-    socket.on("next-piece", handleNextPieceWrapper);
+    dispatch(on("next-piece", handleNextPieceWrapper));
 
     return () => {
       console.log("🔌 Removing next-piece listener");
-      socket.off("next-piece", handleNextPieceWrapper);
+      dispatch(off("next-piece", handleNextPieceWrapper));
     };
-  }, [socket, resetPlayer, setNextPiece]);
+  }, [dispatch, resetPlayer, setNextPiece]);
 
   useEffect(() => {
-    if (!socket) return;
-    console.log("🔌 Socket connected, setting up listeners");
+    console.log("🔌 Setting up penalty listener");
     const handlePenalty = ({ count }) => {
       console.log(`🔌🔌🔌 Received penalty of ${count} lines`);
 
@@ -148,17 +147,71 @@ export const useGame = (
       });
     };
 
-    socket.on("receive-penalty", handlePenalty);
+    dispatch(on("receive-penalty", handlePenalty));
     return () => {
-      socket.off("receive-penalty", handlePenalty);
+      dispatch(off("receive-penalty", handlePenalty));
     };
-  }, [socket]);
+  }, [dispatch]);
+
+  // Freeze the piece into the pile and notify the server.
+  // Called when a falling piece touches the pile, and right away on hard drop.
+  const lockPiece = (piece) => {
+    if (piece.locked || playerRef.current.locked) return;
+    const lockedPiece = { ...piece, locked: true };
+    playerRef.current = lockedPiece;
+    resetPlayer(lockedPiece);
+
+    const merged = mergePieceWithGrid(pileRef.current, piece);
+    const { newPile, clearedLines } = clearFullRows(merged);
+    pileRef.current = newPile;
+    setPile(newPile);
+
+    if (clearedLines > 0) {
+      console.log(`🧹 ${clearedLines} lines cleared`);
+
+      // ✅ Notifier le système de scoring
+      if (onLinesCleared) {
+        onLinesCleared(clearedLines);
+      }
+
+      dispatch(
+        emit("lines-cleared", {
+          room: piece.room,
+          player: piece.name,
+          lines: clearedLines,
+        })
+      );
+    }
+
+    if (reachedTop(newPile)) {
+      if (handleGameOver) handleGameOver();
+      dispatch(
+        emit("game-over", {
+          room: piece.room,
+          player: piece.name,
+        })
+      );
+      return;
+    }
+
+    console.log("🔄 Emitting piece-placed", {
+      room: piece.room,
+      player: piece.name,
+    });
+    dispatch(
+      emit("piece-placed", {
+        room: piece.room,
+        player: piece.name,
+      })
+    );
+  };
 
   // Loop falling down the piece
   useEffect(() => {
     if (gameStarted && !isGameOver) {
       console.log("🆕 Nouvelle partie - réinitialisation du plateau");
       const empty = createEmptyGrid();
+      pileRef.current = empty;
       setPile(empty);
       setGrid(empty);
     }
@@ -168,53 +221,20 @@ export const useGame = (
       const player = playerRef.current;
       const pile = pileRef.current;
 
+      // Waiting for the next piece from the server
+      if (player.locked) return;
+
       const nextPos = { ...player.position, y: player.position.y + 1 };
 
       if (!checkCollision(pile, player.shape, nextPos)) {
         resetPlayer({ ...player, position: nextPos });
       } else {
-        const merged = mergePieceWithGrid(pile, player);
-        const { newPile, clearedLines } = clearFullRows(merged);
-        setPile(newPile);
-
-        if (clearedLines > 0) {
-          console.log(`🧹 ${clearedLines} lines cleared`);
-
-          // ✅ Notifier le système de scoring
-          if (onLinesCleared) {
-            onLinesCleared(clearedLines);
-          }
-
-          socket.emit("lines-cleared", {
-            room: player.room,
-            player: player.name,
-            lines: clearedLines,
-          });
-        }
-
-        if (reachedTop(newPile)) {
-          if (handleGameOver) handleGameOver();
-          socket.emit("game-over", {
-            room: player.room,
-            player: player.name,
-          });
-          clearInterval(interval);
-          return;
-        }
-
-        console.log("🔄 Emitting piece-placed", {
-          room: player.room,
-          player: player.name,
-        });
-        socket.emit("piece-placed", {
-          room: player.room,
-          player: player.name,
-        });
+        lockPiece(player);
       }
     }, 383);
 
     return () => clearInterval(interval);
   }, [gameStarted, isGameOver]);
 
-  return { grid, pile };
+  return { grid, pile, lockPiece };
 };

@@ -29,6 +29,7 @@ import "./unit/hook/usePlayer.test";
 import "./unit/hook/useTheme.test";
 import "./unit/hook/useControls.test";
 import "./unit/hook/useScore.test";
+import "./unit/middleware/socketMiddleware.test";
 //import "./unit/hook/useControlsKeyboard.test";
 import "./integration/server.test";
 //import "./unit/hook/useControlsHook.test";
